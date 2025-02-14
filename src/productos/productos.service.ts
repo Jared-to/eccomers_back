@@ -22,7 +22,6 @@ export class ProductosService {
   // Crear un producto
   async createProducto(createProductoDto: CreateProductoDto, file?: Express.Multer.File): Promise<Producto> {
     const { categoriaId, ...productoData } = createProductoDto;
-    console.log(createProductoDto);
 
     let imagesUrl
     try {

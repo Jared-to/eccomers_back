@@ -1,6 +1,6 @@
 import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, Between } from 'typeorm';
+import { Repository, DataSource, Between, In } from 'typeorm';
 import { Venta } from './entities/venta.entity';
 import { CreateDetalleVentaDto, CreateVentaDto } from './dto/create-venta.dto';
 import { DetalleVenta } from './entities/detalle-venta.entity';
@@ -34,12 +34,13 @@ export class VentasService {
   ) { }
 
   async create(createVentaDto: CreateVentaDto): Promise<Venta> {
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      const { detalles, ventaAlContado, cobro, ...ventaData } = createVentaDto;
+      const { detalles, ventaAlContado, ...ventaData } = createVentaDto;
 
       // Crear y guardar la venta
       const venta = this.ventasRepository.create({
@@ -47,6 +48,7 @@ export class VentasService {
         vendedor: { id: ventaData.vendedor },
         caja: { id: ventaData.cajaId },
         cliente: { id: ventaData.cliente },
+        almacen: { id: ventaData.almacen }
       });
       const ventaGuardada = await queryRunner.manager.save(Venta, venta);
 
@@ -61,18 +63,15 @@ export class VentasService {
       await this.guardarDetallesVenta(queryRunner, detalles, ventaGuardada);
 
       // Registrar movimientos de inventario
-      await this.registrarMovimientosInventario(detalles, ventaGuardada.codigo);
+      await this.registrarMovimientosInventario(detalles, ventaGuardada.codigo, ventaData.almacen);
 
-      // Manejar cobros
-      if (ventaAlContado) {
-        await this.crearCobroContado(queryRunner, ventaGuardada);
-      } else {
-        await this.crearCobrosCredito(queryRunner, cobro, ventaGuardada);
-      }
+
+      await this.crearCobroContado(queryRunner, ventaGuardada);
 
       await queryRunner.commitTransaction();
       return this.findOne(ventaGuardada.id);
     } catch (error) {
+      console.log(error);
       await queryRunner.rollbackTransaction();
       throw new InternalServerErrorException('No se pudo crear la venta');
     } finally {
@@ -85,68 +84,102 @@ export class VentasService {
     await queryRunner.startTransaction();
 
     try {
-      // Buscar la venta existente
+      // Buscar la venta existente con sus detalles
       const venta = await this.findOne(id);
-
       const { detalles, ...ventaData } = updateVentaDto;
 
-      // 1. Devolver al inventario los productos de los detalles actuales
+      // Mapear los detalles actuales por ID del producto
+      const detallesActualesMap = new Map(
+        venta.detalles.map(detalle => [detalle.producto.id, detalle])
+      );
+
+      // Identificar productos modificados o eliminados
+      const detallesAModificar = detalles.filter(detalleNuevo => {
+        const detalleActual = detallesActualesMap.get(detalleNuevo.id_producto);
+        return !detalleActual || detalleActual.cantidad !== detalleNuevo.cantidad;
+      });
+
+      // Identificar productos nuevos que antes no estaban
+      const productosNuevos = detalles.filter(detalleNuevo =>
+        !detallesActualesMap.has(detalleNuevo.id_producto)
+      );
+
+      // 1. Devolver al inventario solo los productos cuyo detalle cambió o fue eliminado
       for (const detalleActual of venta.detalles) {
-        await this.registrarMovimiento({
-          almacen_id: detalleActual.almacen.id,
-          cantidad: detalleActual.cantidad,
-          codigo_barras: detalleActual.codigo_barras,
-          descuento: detalleActual.descuento,
-          precio: detalleActual.precio,
-          id_producto: detalleActual.producto.id,
-          subtotal: detalleActual.subtotal,
-          unidad_medida: detalleActual.unidad_medida
-        }, 'devolucion', `Ajuste Venta - ${venta.codigo}`);
-      }
-
-      // 2. Eliminar los detalles antiguos
-      await this.detallesRepository.delete({ venta: { id } });
-
-      // 3. Crear los nuevos detalles y actualizar inventario
-      if (detalles) {
-        const nuevosDetalles = detalles.map((detalle) =>
-          this.detallesRepository.create({
-            ...detalle,
-            producto: { id: detalle.id_producto },
-            almacen: { id: detalle.almacen_id },
-          }),
-        );
-
-        for (const detalleNuevo of nuevosDetalles) {
+        if (detallesAModificar.some(detalle => detalle.id_producto === detalleActual.producto.id)) {
           await this.registrarMovimiento({
-            almacen_id: detalleNuevo.almacen.id,
-            cantidad: detalleNuevo.cantidad,
-            codigo_barras: detalleNuevo.codigo_barras,
-            descuento: detalleNuevo.descuento,
-            precio: detalleNuevo.precio,
-            id_producto: detalleNuevo.producto.id,
-            subtotal: detalleNuevo.subtotal,
-            unidad_medida: detalleNuevo.unidad_medida
-          }, 'venta', `Ajuste Venta - ${venta.codigo}`);
+            cantidad: detalleActual.cantidad,
+            codigo_barras: detalleActual.codigo_barras,
+            descuento: detalleActual.descuento,
+            precio: detalleActual.precio,
+            id_producto: detalleActual.producto.id,
+            subtotal: detalleActual.subtotal,
+            unidad_medida: detalleActual.unidad_medida
+          }, 'devolucion', `Ajuste Venta - ${venta.codigo}`, ventaData.almacen);
         }
-
-        venta.detalles = nuevosDetalles;
       }
 
-      // 4. Actualizar datos de la venta
+      // 2. Eliminar solo los detalles que cambiaron o fueron eliminados
+      if (detallesAModificar.length > 0) {
+        await queryRunner.manager.delete(DetalleVenta, {
+          venta: { id },
+          producto: { id: In(detallesAModificar.map(d => d.id_producto)) }
+        });
+      }
+
+      // 3. Agregar nuevos productos y registrar su venta en el inventario
+      const nuevosDetalles = detallesAModificar.map(detalle =>
+        this.detallesRepository.create({
+          ...detalle,
+          producto: { id: detalle.id_producto },
+          venta: { id: venta.id }
+        })
+      );
+
+      for (const detalleNuevo of nuevosDetalles) {
+        await this.registrarMovimiento({
+          cantidad: detalleNuevo.cantidad,
+          codigo_barras: detalleNuevo.codigo_barras,
+          descuento: detalleNuevo.descuento,
+          precio: detalleNuevo.precio,
+          id_producto: detalleNuevo.producto.id,
+          subtotal: detalleNuevo.subtotal,
+          unidad_medida: detalleNuevo.unidad_medida
+        }, 'venta', `Ajuste Venta - ${venta.codigo}`, ventaData.almacen);
+      }
+
+      // 4. Agregar productos nuevos que antes no existían
+      const nuevosProductosDetalles = productosNuevos.map(detalle =>
+        this.detallesRepository.create({
+          ...detalle,
+          producto: { id: detalle.id_producto },
+          venta: { id: venta.id }
+        })
+      );
+
+      for (const productoNuevo of nuevosProductosDetalles) {
+        await this.registrarMovimiento({
+          cantidad: productoNuevo.cantidad,
+          codigo_barras: productoNuevo.codigo_barras,
+          descuento: productoNuevo.descuento,
+          precio: productoNuevo.precio,
+          id_producto: productoNuevo.producto.id,
+          subtotal: productoNuevo.subtotal,
+          unidad_medida: productoNuevo.unidad_medida
+        }, 'venta', `Nuevo Producto - ${venta.codigo}`, ventaData.almacen);
+      }
+
+      venta.detalles = [...nuevosDetalles, ...nuevosProductosDetalles];
+
+      // 5. Actualizar datos de la venta
       Object.assign(venta, { ...ventaData, fechaEdit: new Date() });
-      if (updateVentaDto.cobro) {
-        //Verificar si es venta al contado
-        if (!updateVentaDto.ventaAlContado) {
-          await this.actualizarCobros(queryRunner, venta, updateVentaDto.cobro)
-        } else {
-          await this.crearCobroContado(queryRunner, venta);
-        }
-      }
+
+
+      await this.crearCobroContado(queryRunner, venta);
+
 
       // Guardar cambios de la venta
       const ventaActualizada = await queryRunner.manager.save(Venta, venta);
-
 
       await queryRunner.commitTransaction();
       return ventaActualizada;
@@ -157,6 +190,7 @@ export class VentasService {
       await queryRunner.release();
     }
   }
+
 
 
   async findAllDates(fechaInicio: string | 'xx', fechaFin: string | 'xx'): Promise<Venta[]> {
@@ -224,7 +258,7 @@ export class VentasService {
   async findOneEdit(id: string): Promise<Venta> {
     const venta = await this.ventasRepository.findOne({
       where: { id },
-      relations: ['detalles', 'detalles.producto', 'detalles.almacen', 'cliente', 'vendedor', 'cobros'],
+      relations: ['detalles', 'detalles.producto', 'detalles.almacen', 'cliente', 'vendedor', 'cobros', 'almacen'],
     });
 
     if (!venta) {
@@ -240,7 +274,7 @@ export class VentasService {
         .createQueryBuilder('inventario', 'i')
         .select('i.stock')
         .where('i.product = :id_producto', { id_producto: detalle.producto.id })
-        .andWhere('i.almacen = :id_almacen', { id_almacen: detalle.almacen.id })
+        .andWhere('i.almacen = :id_almacen', { id_almacen: venta.almacen.id })
         .andWhere('i.codigo_barras = :codigo_barras', { codigo_barras: detalle.codigo_barras })
         .getRawOne();
 
@@ -268,7 +302,7 @@ export class VentasService {
       // Obtener la venta con sus detalles dentro de la transacción
       const venta = await queryRunner.manager.findOne(Venta, {
         where: { id },
-        relations: ['detalles', 'detalles.almacen', 'detalles.producto'],
+        relations: ['detalles', 'detalles.almacen', 'detalles.producto', 'almacen'],
       });
 
       if (!venta) {
@@ -279,7 +313,6 @@ export class VentasService {
       for (const detalle of venta.detalles) {
         await this.registrarMovimiento(
           {
-            almacen_id: detalle.almacen.id,
             cantidad: detalle.cantidad,
             codigo_barras: detalle.codigo_barras,
             descuento: detalle.descuento,
@@ -290,6 +323,7 @@ export class VentasService {
           },
           'devolucion',
           'Venta Eliminada',
+          venta.almacen.id
         );
       }
 
@@ -343,17 +377,17 @@ export class VentasService {
   async getSalesCount(): Promise<number> {
     return this.ventasRepository.count(); // Devuelve la cantidad de ventas
   }
-  private async registrarMovimiento(detalle: CreateDetalleVentaDto, tipo: string, descripcion: string): Promise<void> {
+  private async registrarMovimiento(detalle: CreateDetalleVentaDto, tipo: string, descripcion: string, almacen: string): Promise<void> {
 
     if (tipo === 'venta') {
       await this.inventarioService.descontarStock({
-        almacenId: detalle.almacen_id,
+        almacenId: almacen,
         cantidad: detalle.cantidad,
         codigo_barras: detalle.codigo_barras,
         productoId: detalle.id_producto,
       });
       await this.movimientosService.registrarSalida({
-        almacenId: detalle.almacen_id,
+        almacenId: almacen,
         cantidad: detalle.cantidad,
         productoId: detalle.id_producto,
         descripcion: descripcion,
@@ -361,13 +395,13 @@ export class VentasService {
       });
     } else {
       await this.inventarioService.agregarStock({
-        almacenId: detalle.almacen_id,
+        almacenId: almacen,
         cantidad: detalle.cantidad,
         codigo_barras: detalle.codigo_barras,
         productoId: detalle.id_producto,
       });
       await this.movimientosService.registrarIngreso({
-        almacenId: detalle.almacen_id,
+        almacenId: almacen,
         cantidad: detalle.cantidad,
         productoId: detalle.id_producto,
         descripcion: descripcion,
@@ -378,16 +412,14 @@ export class VentasService {
 
   private async guardarDetallesVenta(queryRunner, detalles: CreateDetalleVentaDto[], venta: Venta): Promise<void> {
     for (const detalle of detalles) {
-      const almacen = await this.almacenRepository.findOne({ where: { id: detalle.almacen_id } });
       const producto = await this.productoRepository.findOne({ where: { id: detalle.id_producto } });
 
-      if (!almacen || !producto) {
-        throw new NotFoundException('Producto o almacén no encontrado');
+      if (!producto) {
+        throw new NotFoundException('Producto  no encontrado');
       }
 
       const detalleVenta = queryRunner.manager.create(DetalleVenta, {
         ...detalle,
-        almacen,
         producto,
         venta,
       });
@@ -395,10 +427,10 @@ export class VentasService {
     }
   }
 
-  private async registrarMovimientosInventario(detalles, codigoVenta): Promise<void> {
+  private async registrarMovimientosInventario(detalles, codigoVenta: string, almacenID: string): Promise<void> {
     await Promise.all(
       detalles.map(detalle =>
-        this.registrarMovimiento(detalle, 'venta', `Venta - ${codigoVenta}`),
+        this.registrarMovimiento(detalle, 'venta', `Venta-${codigoVenta}`, almacenID),
       ),
     );
   }
@@ -409,126 +441,10 @@ export class VentasService {
       monto: venta.total,
       metodoPago: venta.tipo_pago,
     });
-    venta.deuda = 0;
     venta.estadoCobro = true;
     venta.ventaAlContado = true;
     await queryRunner.manager.save(cobro);
     await queryRunner.manager.save(venta);
   }
 
-  private async crearCobrosCredito(queryRunner, cobroData, venta: Venta): Promise<void> {
-    const { monto, cuotas, glosa, diaPago } = cobroData;
-    const montoPorCuota = parseFloat(((venta.total - monto) / cuotas).toFixed(2));
-    let dia = {
-      1: 'Lunes',
-      2: 'Martes',
-      3: 'Miercoles',
-      4: 'Jueves',
-      5: 'Viernes',
-      6: 'Sabado',
-      7: 'Domingo',
-    }
-    const cobroInicial = this.cobrosRepository.create({
-      venta,
-      monto,
-      montoPagado: monto,
-      metodoPago: venta.tipo_pago,
-      glosa: glosa || 'Monto inicial',
-      cobrado: true,
-      proximoPago: venta.fecha,
-      fechaPago: venta.fecha
-    });
-
-    venta.deuda = parseFloat((venta.total - monto).toFixed(2));
-    venta.cuotas = cuotas;
-    venta.diaPago = dia[diaPago];
-    venta.estadoCobro = false;
-    await queryRunner.manager.save(cobroInicial);
-    await queryRunner.manager.save(venta);
-
-    // Crear cuotas
-    const cobros = [];
-    for (let i = 1; i <= cuotas; i++) {
-      cobros.push(
-        this.cobrosRepository.create({
-          venta,
-          monto: montoPorCuota,
-          proximoPago: this.calcularFechaCuota(diaPago, i),
-          detalle: `Cuota ${i}`,
-          cobrado: false,
-        }),
-      );
-    }
-    await queryRunner.manager.save(cobros);
-  }
-  private async actualizarCobros(queryRunner, venta: Venta, cobro: any): Promise<void> {
-    let dia = {
-      1: 'Lunes',
-      2: 'Martes',
-      3: 'Miercoles',
-      4: 'Jueves',
-      5: 'Viernes',
-      6: 'Sabado',
-      7: 'Domingo',
-    }
-    // Eliminar cobros existentes (si los hay)
-    const cobrosExistentes = await this.cobrosRepository.find({ where: { venta: { id: venta.id } } });
-    if (cobrosExistentes.length > 0) {
-      await queryRunner.manager.remove(Cobros, cobrosExistentes);
-    }
-
-    // Extraer datos del cobro
-    const { monto, cuotas, glosa, diaPago } = cobro;
-
-    // Calcular el monto por cuota
-    const montoPorCuota = parseFloat(((venta.total - monto) / cuotas).toFixed(2));
-
-    // Crear el cobro inicial
-    const cobroInicial = this.cobrosRepository.create({
-      venta,
-      monto,
-      montoPagado: monto,
-      metodoPago: venta.tipo_pago,
-      glosa: glosa || 'Monto inicial',
-      cobrado: true,
-      proximoPago: venta.fecha,
-      fechaPago: venta.fecha
-    });
-
-    // Actualizar la deuda y cuotas de la venta
-
-    venta.deuda = parseFloat((venta.total - monto).toFixed(2));
-    venta.cuotas = cuotas;
-    venta.diaPago = dia[diaPago];
-    venta.estadoCobro = false;
-
-    // Guardar cobro inicial y la venta actualizada
-    await queryRunner.manager.save(cobroInicial);
-    await queryRunner.manager.save(venta);
-
-    // Crear cobros para las cuotas
-    const cobrosCuotas = [];
-    for (let i = 1; i <= cuotas; i++) {
-      cobrosCuotas.push(
-        this.cobrosRepository.create({
-          venta,
-          monto: montoPorCuota,
-          proximoPago: this.calcularFechaCuota(diaPago, i),
-          detalle: `Cuota ${i}`,
-          cobrado: false,
-        }),
-      );
-    }
-
-    // Guardar las cuotas
-    await queryRunner.manager.save(cobrosCuotas);
-  }
-
-
-  private calcularFechaCuota(diaPago: number, semanas: number): Date {
-    const hoy = new Date();
-    const diasFaltantes = (7 + diaPago - hoy.getDay()) % 7 || 7;
-    hoy.setDate(hoy.getDate() + diasFaltantes + (semanas - 1) * 7);
-    return hoy;
-  }
 }

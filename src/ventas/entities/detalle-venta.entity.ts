@@ -20,11 +20,6 @@ export class DetalleVenta {
   @JoinColumn({ name: 'producto_id' })
   producto: Producto;
 
-  @ManyToOne(() => Almacen, { eager: false })
-  @JoinColumn({ name: 'almacen_id' })
-  almacen: Almacen;
-
-    
   @Column('float')
   precio: number;
 

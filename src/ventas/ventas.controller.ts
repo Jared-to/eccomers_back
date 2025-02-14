@@ -5,14 +5,12 @@ import { UpdateVentaDto } from './dto/update-venta.dto';
 import { Venta } from './entities/venta.entity';
 import { ValidRoles } from 'src/auth/interface/valid-roles';
 import { Auth } from 'src/auth/decorators/auth.decorator';
-import { CuotasService } from './service/cuotas.service';
 import { CreateCobroDto } from './dto/create-cobro.dto';
 
 @Controller('ventas')
 export class VentasController {
   constructor(
     private readonly ventasService: VentasService,
-    private readonly cuotasService: CuotasService,
 
   ) { }
 
@@ -58,15 +56,4 @@ export class VentasController {
     return this.ventasService.remove(id);
   }
 
-  //cuotas
-  @Get('cuotas/:id')
-  @Auth(ValidRoles.admin, ValidRoles.user)
-  findCobros(@Param('id') id: string) {
-    return this.cuotasService.getCobrosPorVenta(id);
-  }
-  @Post('cuotas')
-  @Auth(ValidRoles.admin, ValidRoles.user)
-  nuevaCuota(@Body() createCobroDto: CreateCobroDto) {
-    return this.cuotasService.createCobro(createCobroDto);
-  }
 }

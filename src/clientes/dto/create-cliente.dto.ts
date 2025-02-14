@@ -16,7 +16,7 @@ export class CreateClienteDto {
 
   @IsOptional()
   @IsString()
-  cumpleanios:string;
+  cumpleanios?:string;
   
   @IsOptional()
   @IsString()

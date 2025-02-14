@@ -12,5 +12,14 @@ export class CreateAlmacenDto {
 
   @IsOptional()
   @IsString()
-  encargado?:string
+  telefono?:string
+
+  @IsOptional()
+  @IsString()
+  HoraAtencion?:string
+
+  @IsOptional()
+  @IsString()
+  linkGPS?:string
+
 }

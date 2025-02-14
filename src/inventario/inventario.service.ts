@@ -29,7 +29,6 @@ export class InventarioService {
     const { almacen_id, productos } = inventarioInicialDto;
     try {
 
-
       // Crear una lista para almacenar los inventarios creados o actualizados
       const inventarios = [];
 
@@ -205,7 +204,6 @@ export class InventarioService {
   
     return inventario; // Retornar el inventario actualizado
   }
-
   // Traer todo el inventario
   async obtenerInventarioCompleto(): Promise<any[]> {
     const inventario = await this.inventarioRepository
@@ -271,6 +269,7 @@ export class InventarioService {
         'producto.sku AS sku',
         'producto.unidad_medida AS unidad_medida',
         'categoria.nombre AS categoria',
+        'categoria.id AS id_categoria',
         'almacen.nombre AS almacen',
         'inventario.id AS id_inventario',
         'almacen.id AS almacen_id',

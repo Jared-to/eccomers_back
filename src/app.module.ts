@@ -19,6 +19,7 @@ import { ExcelModule } from './excel/excel.module';
 import { HomeModule } from './home/home.module';
 import { ActivosModule } from './activos/activos.module';
 import { TraspasosModule } from './traspasos/traspasos.module';
+import { PedidosModule } from './pedidos/pedidos.module';
 
 @Module({
   imports: [
@@ -55,7 +56,8 @@ import { TraspasosModule } from './traspasos/traspasos.module';
     ExcelModule,
     HomeModule,
     ActivosModule,
-    TraspasosModule
+    TraspasosModule,
+    PedidosModule
   ],
 })
 export class AppModule { }

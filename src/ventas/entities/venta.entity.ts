@@ -4,6 +4,7 @@ import { Cliente } from "src/clientes/entities/cliente.entity";
 import { Caja } from "src/cajas/entities/caja.entity";
 import { User } from "src/auth/entities/user.entity";
 import { Cobros } from "./cobros.entity";
+import { Almacen } from "src/almacenes/entities/almacen.entity";
 
 @Entity('ventas')
 export class Venta {
@@ -32,6 +33,11 @@ export class Venta {
   @JoinColumn({ name: 'usuario_id' })
   vendedor: User;
 
+  @ManyToOne(() => Almacen, { eager: false })
+  @JoinColumn({ name: 'almacen_id' })
+  almacen: Almacen;
+
+
   @Column('float')
   subtotal: number;
 
@@ -44,8 +50,6 @@ export class Venta {
   @Column({ type: 'enum', enum: ['EFECTIVO', 'QR', 'TRANSFERENCIA'], default: 'EFECTIVO' })
   tipo_pago: string;
 
-  @Column({ type: 'enum', enum: ['AL CONTADO', 'PLAN DE PAGOS'], default: 'AL CONTADO' })
-  metodo_pago: string;
 
   @Column({ type: 'bool', default: false })
   ventaAlContado: boolean;
@@ -53,14 +57,6 @@ export class Venta {
   @Column({ type: 'bool', default: true })
   estadoCobro: boolean;
 
-  @Column('int', { default: 1 })
-  cuotaActual: number;
-
-  @Column('text', { nullable: true })
-  diaPago: number;
-
-  @Column({ type: 'float', default: 0, nullable: true })
-  deuda: number;
 
   @Column('int', { nullable: true })
   cuotas: number;

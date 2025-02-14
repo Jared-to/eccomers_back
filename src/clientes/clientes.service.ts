@@ -36,12 +36,7 @@ export class ClientesService {
 
   // Obtener todos los clientes
   async findAll(): Promise<Cliente[]> {
-    const clientesConDeudas = await this.clienteRepository.createQueryBuilder('cliente')
-      .leftJoin('cliente.ventas', 'venta')  // Realiza el JOIN con las ventas
-      .addSelect('SUM(venta.deuda)', 'deudaTotal')  // Sumar las deudas de las ventas del cliente
-      .groupBy('cliente.id')  // Agrupa por el ID del cliente
-      .getRawMany();  // Devuelve los resultados en formato crudo
-
+    const clientesConDeudas = await this.clienteRepository.find();
     return clientesConDeudas;
   }
 
@@ -110,7 +105,6 @@ export class ClientesService {
         // Filtrar las ventas dentro del rango de fechas
         if (venta.fecha >= fechaInicioDate && venta.fecha <= fechaFinDate) {
           // Acumular la deuda total del cliente sumando las deudas de las ventas dentro del rango
-          totalDeuda += venta.deuda;
           totalVentas += venta.total;
 
           // Filtrar los cobros de la venta que están dentro del rango de fechas

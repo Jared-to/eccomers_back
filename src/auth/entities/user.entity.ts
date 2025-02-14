@@ -1,5 +1,6 @@
 // import { Product } from "src/products/entities";
-import { BeforeInsert, BeforeUpdate, Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Almacen } from "src/almacenes/entities/almacen.entity";
+import { BeforeInsert, BeforeUpdate, Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
 
 @Entity('users')
@@ -35,6 +36,10 @@ export class User {
     default: ['user']
   })
   roles: string[];
+
+  // Relación ManyToOne: Un usuario pertenece a un solo almacén
+  @ManyToOne(() => Almacen, almacen => almacen.usuarios)
+  almacen: Almacen;
 
   @BeforeInsert()
   checkFieldBeforeEmail() {

@@ -12,11 +12,10 @@ import { Producto } from 'src/productos/entities/producto.entity';
 import { Almacen } from 'src/almacenes/entities/almacen.entity';
 import { CajasModule } from 'src/cajas/cajas.module';
 import { Cobros } from './entities/cobros.entity';
-import { CuotasService } from './service/cuotas.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Venta,DetalleVenta,Producto,Almacen,Cobros]),
+    TypeOrmModule.forFeature([Venta, DetalleVenta, Producto, Almacen, Cobros]),
     AuthModule,
     InventarioModule,
     ProductosModule,
@@ -24,7 +23,7 @@ import { CuotasService } from './service/cuotas.service';
     CajasModule
   ],
   controllers: [VentasController],
-  providers: [VentasService,CuotasService],
-  exports:[TypeOrmModule,VentasService]
+  providers: [VentasService],
+  exports: [TypeOrmModule, VentasService]
 })
-export class VentasModule {}
+export class VentasModule { }

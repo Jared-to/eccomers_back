@@ -1,5 +1,5 @@
-import { Column, Entity, ManyToMany, PrimaryGeneratedColumn } from "typeorm";
-
+import { User } from "src/auth/entities/user.entity";
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity('almacenes')
 export class Almacen {
@@ -10,12 +10,19 @@ export class Almacen {
   @Column('text')
   nombre: string;
 
-
   @Column('text', { nullable: true })
   ubicacion?: string;
 
+  @Column('text', { nullable: true })
+  telefono?: string;
 
   @Column('text', { nullable: true })
-  encargado?: string;
+  HoraAtencion?: string;
 
+  @Column('text', { nullable: true })
+  linkGPS?: string;
+
+  // Relación OneToMany: Un almacén puede tener varios usuarios
+  @OneToMany(() => User, usuario => usuario.almacen)
+  usuarios: User[];
 }

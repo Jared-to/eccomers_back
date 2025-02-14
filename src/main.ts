@@ -12,7 +12,7 @@ async function bootstrap() {
     prefix: '/uploads', // Prefijo para las URLs
   });
 
-  app.setGlobalPrefix('pollos-evans/api');
+  app.setGlobalPrefix('ecommers/api');
 
   app.useGlobalPipes(
     new ValidationPipe({

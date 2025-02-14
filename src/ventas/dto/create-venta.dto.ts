@@ -7,10 +7,6 @@ export class CreateDetalleVentaDto {
   @IsNotEmpty()
   id_producto: string;
 
-  @IsString()
-  @IsNotEmpty()
-  almacen_id: string;
-
   @IsNumber()
   precio: number;
 
@@ -64,16 +60,9 @@ export class CreateVentaDto {
 
   @IsBoolean()
   ventaAlContado: boolean;
-
-  @IsEnum(['AL CONTADO', 'PLAN DE PAGOS'])
-  metodo_pago: string;
   
   @IsArray()
   @IsOptional()
   detalles: CreateDetalleVentaDto[];
 
-  @IsOptional()
-  @ValidateNested({ each: true })
-  @Type(() => CreateCobroDto)
-  cobro?: CreateCobroDto;
 }

@@ -1,5 +1,6 @@
 import { CreateAlmacenDto } from "src/almacenes/dto/create-almacen.dto";
 import { CreateUserDto } from "src/auth/dto";
+import { CreateClienteDto } from "src/clientes/dto/create-cliente.dto";
 
 
 export const createUserSeed: CreateUserDto = {
@@ -12,6 +13,12 @@ export const createUserSeed: CreateUserDto = {
 
 export const createAlmacen: CreateAlmacenDto = {
   nombre: 'Central',
-  encargado: 'Administrador',
   ubicacion: 'Central'
+};
+
+export const createCliente: CreateClienteDto = {
+  nombre: 'Cliente X',
+  apellido:'Cliente X',
+  direccion:'Central',
+  telefono:'',
 };
