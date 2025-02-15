@@ -60,13 +60,9 @@ export class Venta {
 
   @Column('int', { nullable: true })
   cuotas: number;
-  @OneToMany(() => DetalleVenta, (detalle) => detalle.venta, {
-    cascade: ['insert', 'update', 'remove'], // Especifica las operaciones en cascada
-    onDelete: 'CASCADE', // Asegura la eliminación en cascada
-    onUpdate: 'CASCADE', // Sincroniza las actualizaciones de claves primarias
-  })
-  detalles: DetalleVenta[];
 
+  @OneToMany(() => DetalleVenta, (detalleVenta) => detalleVenta.venta,)
+  detalles: DetalleVenta[];
 
   @OneToMany(
     () => Cobros,

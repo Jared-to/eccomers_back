@@ -38,7 +38,7 @@ export class User {
   roles: string[];
 
   // Relación ManyToOne: Un usuario pertenece a un solo almacén
-  @ManyToOne(() => Almacen, almacen => almacen.usuarios)
+  @ManyToOne(() => Almacen, almacen => almacen.usuarios, { nullable: true })
   almacen: Almacen;
 
   @BeforeInsert()

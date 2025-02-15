@@ -87,6 +87,18 @@ export class VentasService {
       // Buscar la venta existente con sus detalles
       const venta = await this.findOne(id);
       const { detalles, ...ventaData } = updateVentaDto;
+      let detallesAEliminar: DetalleVenta[] = [];
+
+      const client = await queryRunner.manager.findOne(Cliente, { where: { id: updateVentaDto.cliente } });
+
+      venta.cliente = client;
+      venta.fechaEdit = updateVentaDto.fecha;
+      venta.tipo_pago = updateVentaDto.tipo_pago;
+      venta.subtotal = updateVentaDto.subtotal;
+      venta.total = updateVentaDto.total;
+
+      // Guardar la venta actualizada
+      const VG = await queryRunner.manager.save(Venta, venta);
 
       // Mapear los detalles actuales por ID del producto
       const detallesActualesMap = new Map(
@@ -107,82 +119,77 @@ export class VentasService {
       // 1. Devolver al inventario solo los productos cuyo detalle cambió o fue eliminado
       for (const detalleActual of venta.detalles) {
         if (detallesAModificar.some(detalle => detalle.id_producto === detalleActual.producto.id)) {
-          await this.registrarMovimiento({
-            cantidad: detalleActual.cantidad,
-            codigo_barras: detalleActual.codigo_barras,
-            descuento: detalleActual.descuento,
-            precio: detalleActual.precio,
-            id_producto: detalleActual.producto.id,
-            subtotal: detalleActual.subtotal,
-            unidad_medida: detalleActual.unidad_medida
-          }, 'devolucion', `Ajuste Venta - ${venta.codigo}`, ventaData.almacen);
+          detallesAEliminar.push(detalleActual);
+
+          await this.registrarMovimiento(
+            {
+              cantidad: detalleActual.cantidad,
+              codigo_barras: detalleActual.codigo_barras,
+              descuento: detalleActual.descuento,
+              precio: detalleActual.precio,
+              id_producto: detalleActual.producto.id,
+              subtotal: detalleActual.subtotal,
+              unidad_medida: detalleActual.unidad_medida,
+            },
+            'devolucion',
+            `Ajuste Venta - ${venta.codigo}`,
+            ventaData.almacen
+          );
         }
       }
 
-      // 2. Eliminar solo los detalles que cambiaron o fueron eliminados
+      // 2. Agregar nuevos detalles y registrar movimiento
       if (detallesAModificar.length > 0) {
-        await queryRunner.manager.delete(DetalleVenta, {
-          venta: { id },
-          producto: { id: In(detallesAModificar.map(d => d.id_producto)) }
-        });
+        await this.guardarDetallesVenta(queryRunner, detallesAModificar, VG);
+      }
+      for (const element of detallesAModificar) {
+
+        await this.registrarMovimiento(
+          {
+            cantidad: element.cantidad,
+            codigo_barras: element.codigo_barras,
+            descuento: element.descuento,
+            precio: element.precio,
+            id_producto: element.id_producto,
+            subtotal: element.subtotal,
+            unidad_medida: element.unidad_medida,
+          },
+          'venta',
+          `Ajuste Venta - ${venta.codigo}`,
+          ventaData.almacen
+        );
       }
 
-      // 3. Agregar nuevos productos y registrar su venta en el inventario
-      const nuevosDetalles = detallesAModificar.map(detalle =>
-        this.detallesRepository.create({
-          ...detalle,
-          producto: { id: detalle.id_producto },
-          venta: { id: venta.id }
-        })
-      );
-
-      for (const detalleNuevo of nuevosDetalles) {
-        await this.registrarMovimiento({
-          cantidad: detalleNuevo.cantidad,
-          codigo_barras: detalleNuevo.codigo_barras,
-          descuento: detalleNuevo.descuento,
-          precio: detalleNuevo.precio,
-          id_producto: detalleNuevo.producto.id,
-          subtotal: detalleNuevo.subtotal,
-          unidad_medida: detalleNuevo.unidad_medida
-        }, 'venta', `Ajuste Venta - ${venta.codigo}`, ventaData.almacen);
+      // 3. Agregar productos nuevos que antes no existían
+      if (productosNuevos.length > 0) {
+        await this.guardarDetallesVenta(queryRunner, productosNuevos, VG);
       }
 
-      // 4. Agregar productos nuevos que antes no existían
-      const nuevosProductosDetalles = productosNuevos.map(detalle =>
-        this.detallesRepository.create({
-          ...detalle,
-          producto: { id: detalle.id_producto },
-          venta: { id: venta.id }
-        })
-      );
+      for (const element of productosNuevos) {
 
-      for (const productoNuevo of nuevosProductosDetalles) {
-        await this.registrarMovimiento({
-          cantidad: productoNuevo.cantidad,
-          codigo_barras: productoNuevo.codigo_barras,
-          descuento: productoNuevo.descuento,
-          precio: productoNuevo.precio,
-          id_producto: productoNuevo.producto.id,
-          subtotal: productoNuevo.subtotal,
-          unidad_medida: productoNuevo.unidad_medida
-        }, 'venta', `Nuevo Producto - ${venta.codigo}`, ventaData.almacen);
+
+        await this.registrarMovimiento(
+          {
+            cantidad: element.cantidad,
+            codigo_barras: element.codigo_barras,
+            descuento: element.descuento,
+            precio: element.precio,
+            id_producto: element.id_producto,
+            subtotal: element.subtotal,
+            unidad_medida: element.unidad_medida,
+          },
+          'venta',
+          `Nuevo Producto - ${venta.codigo}`,
+          ventaData.almacen
+        );
       }
-
-      venta.detalles = [...nuevosDetalles, ...nuevosProductosDetalles];
-
-      // 5. Actualizar datos de la venta
-      Object.assign(venta, { ...ventaData, fechaEdit: new Date() });
-
-
-      await this.crearCobroContado(queryRunner, venta);
-
-
-      // Guardar cambios de la venta
-      const ventaActualizada = await queryRunner.manager.save(Venta, venta);
+      // 5. Eliminar solo los detalles que cambiaron o fueron eliminados
+      if (detallesAEliminar.length > 0) {
+        await queryRunner.manager.remove(DetalleVenta, detallesAEliminar);
+      }
 
       await queryRunner.commitTransaction();
-      return ventaActualizada;
+      return venta;
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
@@ -192,13 +199,12 @@ export class VentasService {
   }
 
 
-
   async findAllDates(fechaInicio: string | 'xx', fechaFin: string | 'xx'): Promise<Venta[]> {
 
     // Si ambas fechas son 'xx', obtenemos todas las ventas
     if (fechaInicio === 'xx' && fechaFin === 'xx') {
       const ventas = await this.ventasRepository.find({
-        relations: ['detalles', 'detalles.producto', 'detalles.almacen', 'cliente', 'vendedor', 'caja'],
+        relations: ['detalles', 'detalles.producto', 'almacen', 'cliente', 'vendedor', 'caja'],
       });
 
       return ventas;
@@ -234,7 +240,7 @@ export class VentasService {
 
     const ventas = await this.ventasRepository.find({
       where: whereConditions,
-      relations: ['detalles', 'detalles.producto', 'detalles.almacen', 'cliente', 'vendedor', 'caja'],
+      relations: ['detalles', 'detalles.producto', 'almacen', 'cliente', 'vendedor', 'caja'],
     });
 
     return ventas;
@@ -244,7 +250,7 @@ export class VentasService {
   async findOne(id: string): Promise<Venta> {
     const venta = await this.ventasRepository.findOne({
       where: { id },
-      relations: ['detalles', 'detalles.producto', 'detalles.almacen', 'cliente', 'vendedor'],
+      relations: ['detalles', 'almacen', 'detalles.producto', 'cliente', 'vendedor'],
     });
 
 
@@ -258,7 +264,7 @@ export class VentasService {
   async findOneEdit(id: string): Promise<Venta> {
     const venta = await this.ventasRepository.findOne({
       where: { id },
-      relations: ['detalles', 'detalles.producto', 'detalles.almacen', 'cliente', 'vendedor', 'cobros', 'almacen'],
+      relations: ['detalles', 'detalles.producto', 'cliente', 'vendedor', 'cobros', 'almacen'],
     });
 
     if (!venta) {
@@ -302,7 +308,7 @@ export class VentasService {
       // Obtener la venta con sus detalles dentro de la transacción
       const venta = await queryRunner.manager.findOne(Venta, {
         where: { id },
-        relations: ['detalles', 'detalles.almacen', 'detalles.producto', 'almacen'],
+        relations: ['detalles', 'detalles.producto', 'almacen'],
       });
 
       if (!venta) {
@@ -313,6 +319,7 @@ export class VentasService {
       for (const detalle of venta.detalles) {
         await this.registrarMovimiento(
           {
+
             cantidad: detalle.cantidad,
             codigo_barras: detalle.codigo_barras,
             descuento: detalle.descuento,
@@ -411,6 +418,8 @@ export class VentasService {
   }
 
   private async guardarDetallesVenta(queryRunner, detalles: CreateDetalleVentaDto[], venta: Venta): Promise<void> {
+
+
     for (const detalle of detalles) {
       const producto = await this.productoRepository.findOne({ where: { id: detalle.id_producto } });
 

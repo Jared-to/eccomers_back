@@ -3,18 +3,18 @@ import { Venta } from "./venta.entity";
 import { Producto } from "src/productos/entities/producto.entity";
 import { Almacen } from "src/almacenes/entities/almacen.entity";
 
-@Entity('detall_venta')
+@Entity('detalle_venta')
 export class DetalleVenta {
 
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @ManyToOne(() => Venta, (venta) => venta.detalles, {
-    onDelete: 'CASCADE', 
-    onUpdate: 'CASCADE', 
+    onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'venta_id' })
+  @JoinColumn({ name: 'venta_id' })  // Asegúrate de que 'venta_id' sea el nombre correcto de la columna
   venta: Venta;
+  
 
   @ManyToOne(() => Producto, { eager: false })
   @JoinColumn({ name: 'producto_id' })

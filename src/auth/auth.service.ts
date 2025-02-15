@@ -21,11 +21,12 @@ export class AuthService {
   async create(createUserDto: CreateUserDto) {
     try {
 
-      const { password, ...userDate } = createUserDto;
+      const { password, almacen, ...userDate } = createUserDto;
 
       const user = this.userRepository.create({
         ...userDate,
-        password: bcrypt.hashSync(password, 10)
+        password: bcrypt.hashSync(password, 10),
+        almacen: almacen ? { id: almacen } : null
       });
 
       await this.userRepository.save(user);
@@ -86,11 +87,13 @@ export class AuthService {
   }
 
   async updateUser(userId: string, updateUserDto: UpdateUserDto) {
-    const { password, ...userData } = updateUserDto;
+    const { password, almacen, ...userData } = updateUserDto;
 
     let user = await this.userRepository.preload({
       id: userId,
       ...userData,
+      almacen: almacen ? { id: almacen } : null
+
     });
 
     if (!user) {
@@ -120,13 +123,13 @@ export class AuthService {
 
   async deleteUser(userId: string) {
     const user = await this.getUserById(userId);
-  
+
     if (user.fullName === 'Items.bo') {
       throw new Error('El usuario con el nombre "Items.bo" no se puede eliminar');
     }
-  
+
     await this.userRepository.remove(user);
-  
+
     return { message: `User with ID ${userId} has been deleted` };
   }
 

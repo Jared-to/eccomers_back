@@ -1,4 +1,4 @@
-import { IsArray, IsEmail, IsString, Matches, MaxLength, Min, MinLength } from "class-validator";
+import { IsArray, IsEmail, IsOptional, IsString, IsUUID, Matches, MaxLength, Min, MinLength } from "class-validator";
 
 export class CreateUserDto{
   @IsString()
@@ -24,5 +24,9 @@ export class CreateUserDto{
 
   @IsArray()
   roles:string[]
+
+  @IsUUID()
+  @IsOptional()
+  almacen?:string;
 
 }
