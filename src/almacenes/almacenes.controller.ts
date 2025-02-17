@@ -5,7 +5,7 @@ import { UpdateAlmacenDto } from './dto/update-almacen.dto';
 
 @Controller('almacenes')
 export class AlmacenesController {
-  constructor(private readonly almacenesService: AlmacenesService) {}
+  constructor(private readonly almacenesService: AlmacenesService) { }
 
   @Post()
   create(@Body() createAlmaceneDto: CreateAlmacenDto) {
@@ -16,12 +16,21 @@ export class AlmacenesController {
   findAll() {
     return this.almacenesService.findAll();
   }
+  @Get('publicos')
+  findAllPublics() {
+    return this.almacenesService.findAllPublic();
+  }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.almacenesService.findOne(id);
   }
 
+
+  @Patch('estado/:id')
+  isStatus(@Param('id') id: string) {
+    return this.almacenesService.isStatusAlmacen(id);
+  }
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateAlmaceneDto: UpdateAlmacenDto) {
     return this.almacenesService.update(id, updateAlmaceneDto);

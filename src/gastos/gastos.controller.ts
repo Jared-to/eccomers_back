@@ -5,6 +5,8 @@ import { UpdateGastoDto } from './dto/update-gasto.dto';
 import { ValidRoles } from 'src/auth/interface/valid-roles';
 import { Auth } from 'src/auth/decorators/auth.decorator';
 import { Gasto } from './entities/gasto.entity';
+import { GetUser } from 'src/auth/decorators/get-user.decorator';
+import { User } from 'src/auth/entities/user.entity';
 
 @Controller('gastos')
 export class GastosController {
@@ -23,12 +25,14 @@ export class GastosController {
   // }
   @Get()
   @Auth(ValidRoles.admin, ValidRoles.user)
+  @Auth()
   async findAllDates(
     @Query('fechaInicio') fechaInicio: string | 'xx',
     @Query('fechaFin') fechaFin: string | 'xx',
+    @GetUser() user: User
   ): Promise<Gasto[]> {
-
-    return this.gastosService.findAllDates(fechaInicio, fechaFin);
+    
+    return this.gastosService.findAllDates(fechaInicio, fechaFin, user);
   }
 
   @Get(':id')

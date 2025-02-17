@@ -22,6 +22,9 @@ export class Almacen {
   @Column('text', { nullable: true })
   linkGPS?: string;
 
+  @Column('boolean', { default: false })
+  estado?: boolean;
+
   // Relación OneToMany: Un almacén puede tener varios usuarios
   @OneToMany(() => User, usuario => usuario.almacen)
   usuarios: User[];

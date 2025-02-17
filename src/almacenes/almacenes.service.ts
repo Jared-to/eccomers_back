@@ -10,7 +10,7 @@ export class AlmacenesService {
   constructor(
     @InjectRepository(Almacen)
     private readonly almacenRepository: Repository<Almacen>,
-  ) {}
+  ) { }
 
   // Crear un nuevo almacén
   async create(createAlmacenDto: CreateAlmacenDto): Promise<Almacen> {
@@ -21,6 +21,12 @@ export class AlmacenesService {
   // Obtener todos los almacenes
   async findAll(): Promise<Almacen[]> {
     return this.almacenRepository.find();
+  }
+
+  async findAllPublic(): Promise<Almacen[]> {
+    return this.almacenRepository.find({
+      where: { estado: true }
+    });
   }
 
   // Obtener un almacén por ID
@@ -42,6 +48,13 @@ export class AlmacenesService {
     return this.almacenRepository.save(actualizado);
   }
 
+  //cambiar estado
+  async isStatusAlmacen(id: string) {
+    const almacen = await this.findOne(id);
+    almacen.estado = !almacen.estado;
+
+    return this.almacenRepository.save(almacen);
+  }
   // Eliminar un almacén
   async remove(id: string): Promise<void> {
     const result = await this.almacenRepository.delete(id);

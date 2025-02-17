@@ -1,6 +1,8 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Res } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Res, Query } from '@nestjs/common';
 import { ReportesService } from './reportes.service';
 import { Response } from 'express';
+import { ValidRoles } from 'src/auth/interface/valid-roles';
+import { Auth } from 'src/auth/decorators/auth.decorator';
 
 @Controller('reportes')
 export class ReportesController {
@@ -57,5 +59,17 @@ export class ReportesController {
     pdfDoc.info.Title = `Reporte Clientes`;
     pdfDoc.pipe(response);
     pdfDoc.end();
+  }
+
+  @Get('general/')
+  @Auth(ValidRoles.admin, ValidRoles.user)
+  async findAllDates(
+    @Query('fechaInicio') fechaInicio: string | 'xx',
+    @Query('fechaFin') fechaFin: string | 'xx',
+    @Query('almacen') almacen: string | 'xx',
+    @Query('usuario') usuario: string | 'xx',
+  ): Promise<Object> {
+
+    return this.reportesService.reporteVentasGastos(fechaInicio, fechaFin, almacen, usuario);
   }
 }

@@ -48,6 +48,7 @@ export class AuthService {
 
     const user = await this.userRepository.findOne({
       where: { username },
+      relations: ['almacen'],
       select: { username: true, password: true, id: true, roles: true }
     });
 
@@ -67,7 +68,9 @@ export class AuthService {
   }
 
   async getUsers() {
-    const users = await this.userRepository.find();
+    const users = await this.userRepository.find(
+      { relations: ['almacen'] }
+    );
 
     if (!users) {
       return [];
@@ -77,7 +80,10 @@ export class AuthService {
   }
 
   async getUserById(userId: string) {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['almacen']
+    });
 
     if (!user) {
       throw new NotFoundException(`User with ID ${userId} not found`);

@@ -13,6 +13,13 @@ export class Categoria {
   @Column('text')
   descripcion: string;
 
+  @Column('text', { nullable: true })
+  image: string;
+
+  @Column('boolean', { default: false })
+  estado: boolean;
+
+
   @OneToMany(() => Producto, (producto) => producto.categoria)
   productos: Producto[];
 }

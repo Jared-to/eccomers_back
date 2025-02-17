@@ -74,9 +74,9 @@ export class CajasService {
 
 
   //Verificar si la última caja está cerrada
-  async verificarEstadoUltimaCaja(): Promise<object> {
+  async verificarEstadoUltimaCaja(id_usuario: string): Promise<object> {
     const ultimaCaja = await this.cajaRepository.findOne({
-      where: {}, // Asegura que no haya condiciones implícitas
+      where: { usuario: { id: id_usuario } }, // Asegura que no haya condiciones implícitas
       order: { fecha_apertura: 'DESC' },
     });
 

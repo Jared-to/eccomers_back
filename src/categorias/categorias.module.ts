@@ -4,13 +4,15 @@ import { CategoriasController } from './categorias.controller';
 import { Categoria } from './entities/categoria.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from 'src/auth/auth.module';
+import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
 
 @Module({
   controllers: [CategoriasController],
   providers: [CategoriasService],
   imports: [
     TypeOrmModule.forFeature([Categoria]),
-    AuthModule
+    AuthModule,
+    CloudinaryModule
   ],
   exports: [TypeOrmModule], 
 })

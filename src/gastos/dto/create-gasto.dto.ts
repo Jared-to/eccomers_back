@@ -1,4 +1,4 @@
-import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class CreateGastoDto {
 
@@ -25,15 +25,18 @@ export class CreateGastoDto {
   @IsNotEmpty()
   @IsNumber()
   monto: number;
-  
+
   @IsString()
   tipo_pago: string
 
   @IsNotEmpty()
   @IsString()
-  cajaId:string
+  cajaId: string
 
   @IsNotEmpty()
   @IsString()
   categoriaId: string; // ID de la categoría relacionada
+
+  @IsUUID()
+  almacen: string;
 }

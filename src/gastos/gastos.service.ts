@@ -7,6 +7,7 @@ import { UpdateGastoDto } from './dto/update-gasto.dto';
 import { User } from 'src/auth/entities/user.entity';
 import { CategoriaGasto } from 'src/categoria-gastos/entities/categoria-gasto.entity';
 import { CajasService } from 'src/cajas/cajas.service';
+import { AlmacenesService } from 'src/almacenes/almacenes.service';
 
 @Injectable()
 export class GastosService {
@@ -17,11 +18,12 @@ export class GastosService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(CategoriaGasto)
     private readonly categoriaRepository: Repository<CategoriaGasto>,
+    private readonly almacenService: AlmacenesService,
     private readonly cajasService: CajasService,
   ) { }
 
   async create(createGastoDto: CreateGastoDto): Promise<Gasto> {
-    const { usuarioId, categoriaId, cajaId, ...rest } = createGastoDto;
+    const { usuarioId, categoriaId, cajaId, almacen, ...rest } = createGastoDto;
 
     const usuario = await this.userRepository.findOne({ where: { id: usuarioId } });
     if (!usuario) {
@@ -32,6 +34,7 @@ export class GastosService {
     if (!categoria) {
       throw new NotFoundException(`Categoría con ID ${categoriaId} no encontrada.`);
     }
+    const almacenD = await this.almacenService.findOne(almacen);
 
     const caja = await this.cajasService.findOne(cajaId);
 
@@ -44,6 +47,7 @@ export class GastosService {
       caja,
       usuario,
       categoria,
+      almacen: { id: almacenD.id }
     });
 
     const gastoGuardado = await this.gastoRepository.save(gasto);
@@ -60,22 +64,33 @@ export class GastosService {
     return this.gastoRepository.save(gastoGuardado);
   }
 
-  async findAll(): Promise<Gasto[]> {
-    return await this.gastoRepository.find({
+  async findAll(id_user: string): Promise<Gasto[]> {
+    const user = await this.userRepository.findOne({ where: { id: id_user } });
+
+    if (!user) {
+      throw new NotFoundException(`El usuario no fue encontrado: ${id_user}`);
+    }
+
+    const isAdmin = user.roles.some(role => role === 'admin');
+
+    return this.gastoRepository.find({
+      where: isAdmin ? {} : { usuario: { id: user.id } },
       relations: ['usuario', 'categoria', 'caja'],
     });
   }
 
-  async findAllDates(fechaInicio: string | 'xx', fechaFin: string | 'xx'): Promise<Gasto[]> {
+
+  async findAllDates(fechaInicio: string | 'xx', fechaFin: string | 'xx', user: User): Promise<Gasto[]> {
 
     // Si ambas fechas son 'xx', obtenemos todas las ventas
     if (fechaInicio === 'xx' && fechaFin === 'xx') {
-      const gastos = await this.gastoRepository.find({
+
+      const isAdmin = user.roles.some(role => role === 'admin');
+
+      return this.gastoRepository.find({
+        where: isAdmin ? {} : { usuario: { id: user.id } },
         relations: ['usuario', 'categoria', 'caja'],
       });
-
-
-      return gastos;
     }
 
     // Normalizamos las fechas a medianoche para ignorar horas
@@ -116,7 +131,7 @@ export class GastosService {
   async findOne(id: string): Promise<Gasto> {
     const gasto = await this.gastoRepository.findOne({
       where: { id },
-      relations: ['usuario', 'categoria'],
+      relations: ['usuario', 'categoria', 'almacen'],
     });
 
     if (!gasto) {
@@ -129,7 +144,7 @@ export class GastosService {
   async update(id: string, updateGastoDto: UpdateGastoDto): Promise<Gasto> {
     const gasto = await this.findOne(id);
 
-    const { usuarioId, categoriaId, ...rest } = updateGastoDto;
+    const { usuarioId, categoriaId, almacen, ...rest } = updateGastoDto;
 
     if (usuarioId) {
       const usuario = await this.userRepository.findOne({ where: { id: usuarioId } });
@@ -146,6 +161,13 @@ export class GastosService {
       }
       gasto.categoria = categoria;
     }
+    if (gasto?.almacen?.id && gasto?.almacen?.id !== almacen) {
+      const almacenD = await this.almacenService.findOne(almacen);
+      if (!almacenD) {
+        throw new NotFoundException(`Almacen con ID ${categoriaId} no encontrada.`);
+      }
+      gasto.almacen = almacenD;
+    }
 
     Object.assign(gasto, rest);
 
@@ -157,6 +179,6 @@ export class GastosService {
     await this.gastoRepository.remove(gasto);
   }
   async getGastosCount(): Promise<number> {
-    return this.gastoRepository.count(); 
+    return this.gastoRepository.count();
   }
 }

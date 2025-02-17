@@ -37,7 +37,6 @@ export class ProductosService {
         imagesUrl = uploadPromises.secure_url;
         console.log('Resultado de Cloudinary:', uploadPromises);
       }
-      console.log(imagesUrl);
 
       const producto = this.productoRepository.create({
         ...productoData,
@@ -260,7 +259,7 @@ export class ProductosService {
       message: 'Producto desactivado con éxito.',
     };
   }
-
+ 
   // Traer todos los productos
   async findAllProductos(): Promise<any[]> {
     const productos = await this.productoRepository.find({ relations: ['categoria'] });

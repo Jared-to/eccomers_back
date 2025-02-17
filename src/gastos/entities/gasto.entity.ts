@@ -1,3 +1,4 @@
+import { Almacen } from "src/almacenes/entities/almacen.entity";
 import { User } from "src/auth/entities/user.entity";
 import { Caja } from "src/cajas/entities/caja.entity";
 import { CategoriaGasto } from "src/categoria-gastos/entities/categoria-gasto.entity";
@@ -52,4 +53,8 @@ export class Gasto {
 
   })
   caja: Caja;
+
+  @ManyToOne(() => Almacen, { eager: false })
+  @JoinColumn({ name: 'almacen_id' })
+  almacen: Almacen;
 }

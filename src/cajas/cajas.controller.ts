@@ -20,10 +20,10 @@ export class CajasController {
   findAll() {
     return this.cajasService.findAll();
   }
-  @Get('verificar')
+  @Get('verificar/:id')
   @Auth(ValidRoles.admin, ValidRoles.user)
-  verificarEstado() {
-    return this.cajasService.verificarEstadoUltimaCaja()
+  verificarEstado(@Param('id') id: string) {
+    return this.cajasService.verificarEstadoUltimaCaja(id)
   }
 
   @Get(':id')

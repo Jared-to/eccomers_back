@@ -13,6 +13,7 @@ import { Almacen } from 'src/almacenes/entities/almacen.entity';
 import { CajasService } from 'src/cajas/cajas.service';
 import { AuthService } from 'src/auth/auth.service';
 import { Cobros } from './entities/cobros.entity';
+import { User } from 'src/auth/entities/user.entity';
 
 @Injectable()
 export class VentasService {
@@ -23,12 +24,11 @@ export class VentasService {
     private readonly detallesRepository: Repository<DetalleVenta>,
     @InjectRepository(Producto)
     private readonly productoRepository: Repository<Producto>,
-    @InjectRepository(Almacen)
-    private readonly almacenRepository: Repository<Almacen>,
     @InjectRepository(Cobros)
     private readonly cobrosRepository: Repository<Cobros>,
     private readonly inventarioService: InventarioService,
     private readonly movimientosService: MovimientosAlmacenService,
+    private readonly authService: AuthService,
     private readonly dataSource: DataSource,
 
   ) { }
@@ -199,15 +199,17 @@ export class VentasService {
   }
 
 
-  async findAllDates(fechaInicio: string | 'xx', fechaFin: string | 'xx'): Promise<Venta[]> {
+  async findAllDates(fechaInicio: string | 'xx', fechaFin: string | 'xx', user: User): Promise<Venta[]> {
 
+    const isAdmin = user.roles.some(role => role === 'admin');
     // Si ambas fechas son 'xx', obtenemos todas las ventas
     if (fechaInicio === 'xx' && fechaFin === 'xx') {
-      const ventas = await this.ventasRepository.find({
+
+      return this.ventasRepository.find({
+        where: isAdmin ? {} : { vendedor: { id: user.id } },
         relations: ['detalles', 'detalles.producto', 'almacen', 'cliente', 'vendedor', 'caja'],
       });
 
-      return ventas;
     }
 
     // Normalizamos las fechas a medianoche para ignorar horas
@@ -229,6 +231,9 @@ export class VentasService {
 
     const whereConditions: any = {};
 
+    if (!isAdmin) {
+      whereConditions.vendedor = { id: user.id };
+    }
     // Filtrar por rango de fechas si ambas fechas son proporcionadas
     if (fechaInicio && fechaFin) {
       whereConditions.fecha = Between(fechaInicioNormalizada, fechaFinNormalizada);
