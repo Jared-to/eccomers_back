@@ -20,6 +20,7 @@ import { HomeModule } from './home/home.module';
 import { ActivosModule } from './activos/activos.module';
 import { TraspasosModule } from './traspasos/traspasos.module';
 import { PedidosModule } from './pedidos/pedidos.module';
+import { ConfigModuleConfig } from './config/config.module';
 
 @Module({
   imports: [
@@ -57,7 +58,8 @@ import { PedidosModule } from './pedidos/pedidos.module';
     HomeModule,
     ActivosModule,
     TraspasosModule,
-    PedidosModule
+    PedidosModule,
+    ConfigModuleConfig,
   ],
 })
 export class AppModule { }

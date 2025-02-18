@@ -2,6 +2,8 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { AlmacenesService } from './almacenes.service';
 import { CreateAlmacenDto } from './dto/create-almacen.dto';
 import { UpdateAlmacenDto } from './dto/update-almacen.dto';
+import { Auth } from 'src/auth/decorators/auth.decorator';
+import { ValidRoles } from 'src/auth/interface/valid-roles';
 
 @Controller('almacenes')
 export class AlmacenesController {
@@ -13,6 +15,8 @@ export class AlmacenesController {
   }
 
   @Get()
+  @Auth(ValidRoles.admin, ValidRoles.user)
+
   findAll() {
     return this.almacenesService.findAll();
   }
@@ -22,6 +26,7 @@ export class AlmacenesController {
   }
 
   @Get(':id')
+  @Auth(ValidRoles.admin, ValidRoles.user)
   findOne(@Param('id') id: string) {
     return this.almacenesService.findOne(id);
   }
@@ -37,6 +42,7 @@ export class AlmacenesController {
   }
 
   @Delete(':id')
+  @Auth(ValidRoles.admin, ValidRoles.user)
   remove(@Param('id') id: string) {
     return this.almacenesService.remove(id);
   }

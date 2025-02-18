@@ -37,7 +37,11 @@ export class InventarioController {
   ) {
     return this.ajustesService.updateAjuste(id, createAjuste);
   }
-
+  @Get('publicas/:almacen/:categoria')
+  traerProductosPublicos(@Param('almacen') almacen: string, @Param('categoria') categoria: string) {
+    return this.inventarioService.obtenerProductosPorCategoriaYAlmacen(almacen, categoria)
+  }
+  
   @Get('ajuste')
   @Auth(ValidRoles.admin, ValidRoles.user)
   traerAjustes() {

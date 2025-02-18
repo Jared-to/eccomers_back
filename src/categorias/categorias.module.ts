@@ -14,6 +14,6 @@ import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
     AuthModule,
     CloudinaryModule
   ],
-  exports: [TypeOrmModule], 
+  exports: [TypeOrmModule,CategoriasService], 
 })
 export class CategoriasModule {}

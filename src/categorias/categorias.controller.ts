@@ -15,7 +15,8 @@ export class CategoriasController {
   @UseInterceptors(FileInterceptor('file'))
   create(
     @Body() createCategoriaDto: CreateCategoriaDto,
-    @UploadedFile() file?: Express.Multer.File,) {
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
 
     return this.categoriasService.createCategoria(createCategoriaDto, file);
   }
@@ -24,6 +25,11 @@ export class CategoriasController {
   @Auth(ValidRoles.admin, ValidRoles.user)
   findAll() {
     return this.categoriasService.findAllCategorias();
+  }
+
+  @Get('publicas')
+  findAllPublics() {
+    return this.categoriasService.findAllCategoriasPublicas();
   }
 
   @Get(':id')

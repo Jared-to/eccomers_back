@@ -12,6 +12,7 @@ import { AjusteInventario } from './entities/ajustes-inventario.entity';
 import { DetalleAjuste } from './entities/detalle-ajuste.entity';
 import { AlmacenesModule } from 'src/almacenes/almacenes.module';
 import { AuthModule } from 'src/auth/auth.module';
+import { CategoriasModule } from 'src/categorias/categorias.module';
 
 @Module({
   controllers: [InventarioController],
@@ -20,7 +21,8 @@ import { AuthModule } from 'src/auth/auth.module';
     TypeOrmModule.forFeature([inventarioInicial, Inventario, MovimientoInventario,AjusteInventario,DetalleAjuste]),
     ProductosModule,
     AlmacenesModule,
-    AuthModule
+    AuthModule,
+    CategoriasModule
   ],
   exports:[
     InventarioService,

@@ -65,6 +65,10 @@ export class CategoriasService {
     return await this.categoriaRepository.find({ relations: ['productos'] }); // Incluye los productos
   }
 
+  // Traer todas las categorías
+  async findAllCategoriasPublicas(): Promise<Categoria[]> {
+    return await this.categoriaRepository.find({ where: { estado: true } });
+  }
   // Traer una categoría específica
   async findOneCategoria(id: string): Promise<Categoria> {
     const categoria = await this.categoriaRepository.findOne({

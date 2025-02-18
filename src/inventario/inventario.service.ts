@@ -11,6 +11,7 @@ import { ProductosService } from 'src/productos/productos.service';
 import { AlmacenesService } from 'src/almacenes/almacenes.service';
 import { Producto } from 'src/productos/entities/producto.entity';
 import { Almacen } from 'src/almacenes/entities/almacen.entity';
+import { CategoriasService } from 'src/categorias/categorias.service';
 
 @Injectable()
 export class InventarioService {
@@ -21,7 +22,8 @@ export class InventarioService {
     private readonly inventarioInicialRepository: Repository<inventarioInicial>,
     private readonly movimientosService: MovimientosAlmacenService,
     private readonly productosService: ProductosService,
-    private readonly AlmacenService: AlmacenesService
+    private readonly AlmacenService: AlmacenesService,
+    private readonly CategoriaService: CategoriasService,
   ) { }
 
   //agregar inventario inicial
@@ -146,21 +148,21 @@ export class InventarioService {
     queryRunner: QueryRunner,
   ): Promise<Inventario> {
     const { almacenId, cantidad, productoId, codigo_barras } = createInventarioDto;
-  
+
     // Buscar el inventario existente dentro de la transacción
     let inventario = await queryRunner.manager.findOne(Inventario, {
       where: { almacen: { id: almacenId }, product: { id: productoId }, codigo_barras },
       relations: ['almacen', 'product'],
     });
-  
+
     if (!inventario) {
       const product = await queryRunner.manager.findOne(Producto, { where: { id: productoId } });
       const almacen = await queryRunner.manager.findOne(Almacen, { where: { id: almacenId } });
-  
+
       if (!product || !almacen) {
         throw new NotFoundException(`El producto o almacén especificado no existe.`);
       }
-  
+
       inventario = queryRunner.manager.create(Inventario, {
         almacen,
         product,
@@ -170,38 +172,38 @@ export class InventarioService {
     } else {
       inventario.stock += cantidad;
     }
-  
+
     // Guardar en la base de datos dentro de la transacción
     await queryRunner.manager.save(inventario);
-  
+
     return inventario; // Retornar el inventario actualizado
   }
-  
+
   async descontarStockTransactional(
     createInventarioDto: CreateInventarioDto,
     queryRunner: QueryRunner,
   ): Promise<Inventario> {
     const { almacenId, cantidad, productoId, codigo_barras } = createInventarioDto;
-  
+
     // Buscar el inventario existente dentro de la transacción
     const inventario = await queryRunner.manager.findOne(Inventario, {
       where: { almacen: { id: almacenId }, product: { id: productoId }, codigo_barras },
       relations: ['almacen', 'product'],
     });
-  
+
     if (!inventario) {
       throw new NotFoundException(`El producto no está registrado en el inventario para este almacén.`);
     }
-  
+
     if (inventario.stock < cantidad) {
       throw new Error('No hay suficiente stock disponible para descontar esta cantidad.');
     }
-  
+
     inventario.stock -= cantidad;
-  
+
     // Guardar en la base de datos dentro de la transacción
     await queryRunner.manager.save(inventario);
-  
+
     return inventario; // Retornar el inventario actualizado
   }
   // Traer todo el inventario
@@ -229,7 +231,7 @@ export class InventarioService {
       .addGroupBy('producto.imagen')
       .addGroupBy('producto.codigo')
       .getRawMany();
-  
+
     // Mapeamos los resultados para garantizar que todos los campos sean devueltos correctamente
     return inventario.map((item) => ({
       id_producto: item.id_producto,
@@ -243,7 +245,7 @@ export class InventarioService {
       stock: parseFloat(item.stock), // Asegúrate de devolver el stock como número
     }));
   }
-  
+
   // Traer productos de un almacén específico
   async obtenerProductosPorAlmacen(almacenId: string): Promise<any> {
     // Validar si el almacén existe
@@ -325,6 +327,59 @@ export class InventarioService {
 
     // Formatear la respuesta
     return inventario
+  }
+  async obtenerProductosPorCategoriaYAlmacen(
+    almacenId: string,
+    categoriaId: string
+  ): Promise<any> {
+    // Validar si el almacén existe
+    const almacen = await this.AlmacenService.findOne(almacenId);
+    if (!almacen) {
+      throw new NotFoundException(`Almacén con ID ${almacenId} no encontrado`);
+    }
+
+    // Validar si la categoría existe
+    const categoria = await this.CategoriaService.findOneCategoria(categoriaId);
+    if (!categoria) {
+      throw new NotFoundException(`Categoría con ID ${categoriaId} no encontrada`);
+    }
+
+    // Obtener productos filtrados por almacén y categoría
+    const inventario = await this.inventarioRepository
+      .createQueryBuilder('inventario')
+      .leftJoinAndSelect('inventario.product', 'producto')
+      .leftJoinAndSelect('producto.categoria', 'categoria')
+      .leftJoinAndSelect('inventario.almacen', 'almacen')
+      .select([
+        'producto.id AS id_producto',
+        'producto.codigo AS codigo',
+        'producto.alias AS alias',
+        'producto.descripcion AS descripcion',
+        'producto.imagen AS imagen',
+        'producto.precio_venta AS precio_venta',
+        'producto.precio_min_venta AS precio_min_venta',
+        'producto.sku AS sku',
+        'producto.unidad_medida AS unidad_medida',
+        'categoria.nombre AS categoria',
+        'categoria.id AS id_categoria',
+        'almacen.nombre AS almacen',
+        'inventario.id AS id_inventario',
+        'almacen.id AS almacen_id',
+        'inventario.stock AS stock',
+        'inventario.codigo_barras AS codigo_barras',
+      ])
+      .where('producto.estado = true')
+      .andWhere('almacen.id = :almacenId', { almacenId })
+      .andWhere('categoria.id = :categoriaId', { categoriaId }) // Filtrar por categoría
+      .getRawMany();
+
+    // Construir la respuesta con detalles del almacén, categoría y productos
+    return {
+      nombre_almacen: almacen.nombre,
+      ubicacion_almacen: almacen.ubicacion,
+      nombre_categoria: categoria.nombre,
+      inventario, // Lista de productos filtrados por el almacén y categoría
+    };
   }
 
 
