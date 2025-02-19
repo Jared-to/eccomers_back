@@ -6,6 +6,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
 import { AuthModule } from 'src/auth/auth.module';
 import { DetallePedido } from './entities/productosPedido.entity';
+import { VentasModule } from 'src/ventas/ventas.module';
+import { ClientesModule } from 'src/clientes/clientes.module';
 
 @Module({
   controllers: [PedidosController],
@@ -13,7 +15,9 @@ import { DetallePedido } from './entities/productosPedido.entity';
   imports: [
     TypeOrmModule.forFeature([Pedido,DetallePedido]),
     CloudinaryModule,
-    AuthModule
+    AuthModule,
+    VentasModule,
+    ClientesModule
   ]
 })
 export class PedidosModule { }

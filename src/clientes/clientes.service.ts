@@ -50,6 +50,11 @@ export class ClientesService {
     }
     return cliente;
   }
+  // Obtener un cliente por nombre y apellido
+  async findOneParams(nombre: string, apellido: string): Promise<Cliente> {
+
+    return this.clienteRepository.findOne({ where: { nombre, apellido } });
+  }
   //buscar por codigo
   async findOneCodigo(codigo: string) {
     const client = await this.clienteRepository.findOne({ where: { codigo: codigo } });
@@ -176,8 +181,8 @@ export class ClientesService {
 
     return clientesConFechas;
   }
-  
-  
+
+
   async getClientesCount(): Promise<number> {
     return this.clienteRepository.count();
   }

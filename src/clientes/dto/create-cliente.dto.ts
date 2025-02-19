@@ -12,7 +12,7 @@ export class CreateClienteDto {
 
   @IsOptional()
   @IsString()
-  direccion:string;
+  direccion?:string;
 
   @IsOptional()
   @IsString()
@@ -20,5 +20,5 @@ export class CreateClienteDto {
   
   @IsOptional()
   @IsString()
-  telefono:string
+  telefono?:string
 }

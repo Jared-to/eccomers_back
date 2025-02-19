@@ -105,87 +105,123 @@ export class VentasService {
         venta.detalles.map(detalle => [detalle.producto.id, detalle])
       );
 
-      // Identificar productos modificados o eliminados
-      const detallesAModificar = detalles.filter(detalleNuevo => {
-        const detalleActual = detallesActualesMap.get(detalleNuevo.id_producto);
-        return !detalleActual || detalleActual.cantidad !== detalleNuevo.cantidad;
-      });
+      if (venta.almacen.id !== updateVentaDto.almacen) {
+        for (const detalle of venta.detalles) {
+          // Devolver productos al inventario del almacén anterior
+          await this.registrarMovimiento(
+            {
+              cantidad: detalle.cantidad,
+              codigo_barras: detalle.codigo_barras,
+              descuento: detalle.descuento,
+              precio: detalle.precio,
+              id_producto: detalle.producto.id,
+              subtotal: detalle.subtotal,
+              unidad_medida: detalle.unidad_medida,
+            },
+            'devolucion',
+            `Cambio de Almacén - ${venta.codigo}`,
+            venta.almacen.id // Almacén anterior
+          );
 
-      // Identificar productos nuevos que antes no estaban
-      const productosNuevos = detalles.filter(detalleNuevo =>
-        !detallesActualesMap.has(detalleNuevo.id_producto)
-      );
+          // Registrar productos en el nuevo almacén
+          await this.registrarMovimiento(
+            {
+              cantidad: detalle.cantidad,
+              codigo_barras: detalle.codigo_barras,
+              descuento: detalle.descuento,
+              precio: detalle.precio,
+              id_producto: detalle.producto.id,
+              subtotal: detalle.subtotal,
+              unidad_medida: detalle.unidad_medida,
+            },
+            'venta',
+            `Cambio de Almacén - ${venta.codigo}`,
+            updateVentaDto.almacen // Nuevo almacén
+          );
+        }
+      } else {
 
-      // 1. Devolver al inventario solo los productos cuyo detalle cambió o fue eliminado
-      for (const detalleActual of venta.detalles) {
-        if (detallesAModificar.some(detalle => detalle.id_producto === detalleActual.producto.id)) {
-          detallesAEliminar.push(detalleActual);
+        // Identificar productos modificados o eliminados
+        const detallesAModificar = detalles.filter(detalleNuevo => {
+          const detalleActual = detallesActualesMap.get(detalleNuevo.id_producto);
+          return !detalleActual || detalleActual.cantidad !== detalleNuevo.cantidad;
+        });
+
+        // Identificar productos nuevos que antes no estaban
+        const productosNuevos = detalles.filter(detalleNuevo =>
+          !detallesActualesMap.has(detalleNuevo.id_producto)
+        );
+
+        // 1. Devolver al inventario solo los productos cuyo detalle cambió o fue eliminado
+        for (const detalleActual of venta.detalles) {
+          if (detallesAModificar.some(detalle => detalle.id_producto === detalleActual.producto.id)) {
+            detallesAEliminar.push(detalleActual);
+
+            await this.registrarMovimiento(
+              {
+                cantidad: detalleActual.cantidad,
+                codigo_barras: detalleActual.codigo_barras,
+                descuento: detalleActual.descuento,
+                precio: detalleActual.precio,
+                id_producto: detalleActual.producto.id,
+                subtotal: detalleActual.subtotal,
+                unidad_medida: detalleActual.unidad_medida,
+              },
+              'devolucion',
+              `Ajuste Venta - ${venta.codigo}`,
+              ventaData.almacen
+            );
+          }
+        }
+
+        // 2. Agregar nuevos detalles y registrar movimiento
+        if (detallesAModificar.length > 0) {
+          await this.guardarDetallesVenta(queryRunner, detallesAModificar, VG);
+        }
+        for (const element of detallesAModificar) {
 
           await this.registrarMovimiento(
             {
-              cantidad: detalleActual.cantidad,
-              codigo_barras: detalleActual.codigo_barras,
-              descuento: detalleActual.descuento,
-              precio: detalleActual.precio,
-              id_producto: detalleActual.producto.id,
-              subtotal: detalleActual.subtotal,
-              unidad_medida: detalleActual.unidad_medida,
+              cantidad: element.cantidad,
+              codigo_barras: element.codigo_barras,
+              descuento: element.descuento,
+              precio: element.precio,
+              id_producto: element.id_producto,
+              subtotal: element.subtotal,
+              unidad_medida: element.unidad_medida,
             },
-            'devolucion',
+            'venta',
             `Ajuste Venta - ${venta.codigo}`,
             ventaData.almacen
           );
         }
-      }
 
-      // 2. Agregar nuevos detalles y registrar movimiento
-      if (detallesAModificar.length > 0) {
-        await this.guardarDetallesVenta(queryRunner, detallesAModificar, VG);
-      }
-      for (const element of detallesAModificar) {
+        // 3. Agregar productos nuevos que antes no existían
+        if (productosNuevos.length > 0) {
+          await this.guardarDetallesVenta(queryRunner, productosNuevos, VG);
+        }
 
-        await this.registrarMovimiento(
-          {
-            cantidad: element.cantidad,
-            codigo_barras: element.codigo_barras,
-            descuento: element.descuento,
-            precio: element.precio,
-            id_producto: element.id_producto,
-            subtotal: element.subtotal,
-            unidad_medida: element.unidad_medida,
-          },
-          'venta',
-          `Ajuste Venta - ${venta.codigo}`,
-          ventaData.almacen
-        );
-      }
+        for (const element of productosNuevos) {
 
-      // 3. Agregar productos nuevos que antes no existían
-      if (productosNuevos.length > 0) {
-        await this.guardarDetallesVenta(queryRunner, productosNuevos, VG);
-      }
-
-      for (const element of productosNuevos) {
-
-
-        await this.registrarMovimiento(
-          {
-            cantidad: element.cantidad,
-            codigo_barras: element.codigo_barras,
-            descuento: element.descuento,
-            precio: element.precio,
-            id_producto: element.id_producto,
-            subtotal: element.subtotal,
-            unidad_medida: element.unidad_medida,
-          },
-          'venta',
-          `Nuevo Producto - ${venta.codigo}`,
-          ventaData.almacen
-        );
-      }
-      // 5. Eliminar solo los detalles que cambiaron o fueron eliminados
-      if (detallesAEliminar.length > 0) {
-        await queryRunner.manager.remove(DetalleVenta, detallesAEliminar);
+          await this.registrarMovimiento(
+            {
+              cantidad: element.cantidad,
+              codigo_barras: element.codigo_barras,
+              descuento: element.descuento,
+              precio: element.precio,
+              id_producto: element.id_producto,
+              subtotal: element.subtotal,
+              unidad_medida: element.unidad_medida,
+            },
+            'venta',
+            `Nuevo Producto - ${venta.codigo}`,
+            ventaData.almacen
+          );
+        }
+        // 5. Eliminar solo los detalles que cambiaron o fueron eliminados
+        if (detallesAEliminar.length > 0) {
+          await queryRunner.manager.remove(DetalleVenta, detallesAEliminar);
+        }
       }
 
       await queryRunner.commitTransaction();
@@ -303,7 +339,6 @@ export class VentasService {
       detalles: result,
     };
   }
-
 
   async remove(id: string): Promise<void> {
     const queryRunner = this.ventasRepository.manager.connection.createQueryRunner();

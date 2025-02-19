@@ -19,7 +19,7 @@ export class Cliente {
   @Column('text')
   apellido: string;
 
-  @Column('text')
+  @Column('text', { nullable: true })
   direccion: string;
 
   @Column('date', { nullable: true })

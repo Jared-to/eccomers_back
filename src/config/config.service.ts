@@ -12,6 +12,15 @@ export class ConfigService {
     private readonly configRepository: Repository<Config>,
     private readonly cloudinaryService: CloudinaryService
   ) { }
+  async configInicial(): Promise<Config> {
+    let config = await this.configRepository.create(
+      {
+        imagenQR: 'qr'
+      }
+    );
+
+    return await this.configRepository.save(config);
+  }
   async asignarQR(file: Express.Multer.File) {
     const config = await this.configRepository.findOne({ where: { estado: true } });
     let imageUrl;

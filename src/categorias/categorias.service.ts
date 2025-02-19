@@ -14,7 +14,6 @@ export class CategoriasService {
     private readonly cloudinaryService: CloudinaryService,
 
   ) { }
-
   // Crear una categoría
   async createCategoria(createCategoriaDto: CreateCategoriaDto, file?: Express.Multer.File): Promise<Categoria> {
     let imagesUrl;

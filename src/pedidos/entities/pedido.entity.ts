@@ -2,6 +2,7 @@ import { User } from "src/auth/entities/user.entity";
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { DetallePedido } from "./productosPedido.entity";
 import { Almacen } from "src/almacenes/entities/almacen.entity";
+import { Venta } from "src/ventas/entities/venta.entity";
 
 
 @Entity('pedido')
@@ -56,8 +57,11 @@ export class Pedido {
   @Column('text', { nullable: true })
   fotoRecibo: string;
 
-  @Column({ type: 'enum', enum: ['Solicitado', 'Aceptado', 'Rechazado'], default: 'Solicitado' })
+  @Column({ type: 'enum', enum: ['Solicitado', 'Aceptado','Vendido', 'Rechazado', 'Cancelado'], default: 'Solicitado' })
   estado: string;
+
+  @Column({ type: 'boolean', default: false })
+  vendido: boolean;
 
   @ManyToOne(() => User, { eager: false })
   @JoinColumn({ name: 'usuario_id' })
@@ -66,6 +70,10 @@ export class Pedido {
   @ManyToOne(() => Almacen, { eager: false })
   @JoinColumn({ name: 'almacen_id' })
   almacen: Almacen;
+
+  @ManyToOne(() => Venta, { eager: false })
+  @JoinColumn({ name: 'venta_id' })
+  venta: Venta;
 
   @OneToMany(() => DetallePedido, (detalleVenta) => detalleVenta.pedido,)
   detalles: DetallePedido[];

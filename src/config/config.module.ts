@@ -13,6 +13,9 @@ import { AuthModule } from 'src/auth/auth.module';
     TypeOrmModule.forFeature([Config]),
     CloudinaryModule,
     AuthModule
+  ],
+  exports: [
+    ConfigService
   ]
 })
 export class ConfigModuleConfig { }
