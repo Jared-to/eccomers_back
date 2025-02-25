@@ -2,7 +2,6 @@ import { CreateAlmacenDto } from "src/almacenes/dto/create-almacen.dto";
 import { CreateUserDto } from "src/auth/dto";
 import { CreateCategoriaDto } from "src/categorias/dto/create-categoria.dto";
 import { CreateClienteDto } from "src/clientes/dto/create-cliente.dto";
-import { ConfigDto } from "src/config/dto/config.dto";
 
 
 export const createUserSeed: CreateUserDto = {

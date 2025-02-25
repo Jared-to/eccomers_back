@@ -29,6 +29,10 @@ export class PedidosController {
   getPedidosAceptados() {
     return this.pedidosService.pedidosAceptados();
   }
+  @Get('entregados')
+  getPedidosEntregados() {
+    return this.pedidosService.pedidosEntregados();
+  }
   @Get('cancelados')
   getPedidosCancelados() {
     return this.pedidosService.pedidosCancelados();

@@ -50,7 +50,13 @@ export class PedidosService {
       })
       await this.detallePedidoRepository.save(detalle)
     }
+    // Generar el nuevo código único
+    const nuevoCodigo = pedidoG
+      ? `PD${String(pedidoG.increment).padStart(5, '0')}`
+      : 'PD00001';
 
+    pedidoG.codigo = nuevoCodigo;
+    return await this.pedidoRepository.save(pedidoG)
 
   }
   async aceptarPedido(id: string, user: string) {
@@ -119,7 +125,13 @@ export class PedidosService {
   }
   async pedidosAceptados() {
     return this.pedidoRepository.find({
-      where: { estado: In(['Aceptado', 'Vendido']) },
+      where: { estado: 'Aceptado' },
+      relations: ['almacen']
+    })
+  }
+  async pedidosEntregados() {
+    return this.pedidoRepository.find({
+      where: { estado: 'Vendido' },
       relations: ['almacen']
     })
   }

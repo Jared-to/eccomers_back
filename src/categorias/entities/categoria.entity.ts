@@ -1,5 +1,5 @@
 import { Producto } from "src/productos/entities/producto.entity";
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity('categorias')
 export class Categoria {
@@ -19,6 +19,11 @@ export class Categoria {
   @Column('boolean', { default: false })
   estado: boolean;
 
+  @CreateDateColumn({ type: 'timestamp' })
+  createAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updateAt: Date;
 
   @OneToMany(() => Producto, (producto) => producto.categoria)
   productos: Producto[];

@@ -14,6 +14,9 @@ export class Pedido {
   @Column({ type: 'int', generated: 'increment', unique: true })
   increment: number;
 
+  @Column({ type: 'text', unique: true,nullable:true})
+  codigo: string;
+
   @Column('text', { nullable: true })
   nombreSolicitante: string;
 
