@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsString, IsNumber, IsOptional, MinLength, IsPositive } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsNotEmpty, IsString, IsNumber, IsOptional, MinLength, IsPositive, Min, IsArray, ValidateNested } from 'class-validator';
 
 export class CreateProductoDto {
 
@@ -25,16 +26,27 @@ export class CreateProductoDto {
   sku: string;
 
   @IsString()
-  precio_venta: string;
-
-  @IsOptional()
-  @IsString()
-  precio_min_venta?:string;
-
-  @IsString()
   @IsNotEmpty()
   categoriaId: string;
 
-  @IsOptional() 
+  @IsOptional()
   imagen?: string;
+
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateVarianteProductoDto)
+  variantes: CreateVarianteProductoDto[];
+}
+export class CreateVarianteProductoDto {
+  @IsString()
+  @IsNotEmpty({ message: 'El nombre de la variante es obligatorio' })
+  nombre: string;
+
+  @IsString()
+  precio: string;
+
+  @IsOptional()
+  id?: number;
+
 }

@@ -117,18 +117,15 @@ export class ExcelService {
           if (!producto) {
             const codigoProducto = `P${nextIncrement.toString().padStart(4, '0')}`; // Generar código único
             nextIncrement++; // Incrementar para el siguiente producto
-            producto = await this.productoService.createProductoExcel({
-              alias: alias,
-              descripcion: descripcion,
-              sku,
-              marca,
-              precio_min_venta: precioMinimo.toFixed(2),
-              unidad_medida: unidadMedida,
-              precio_venta: precioVenta.toFixed(2),
-              categoriaId: categoria.id,
-              codigo: codigoProducto,
-
-            }, queryRunner);
+            // producto = await this.productoService.createProductoExcel({
+            //   alias: alias,
+            //   descripcion: descripcion,
+            //   sku,
+            //   marca,
+            //   unidad_medida: unidadMedida,
+            //   categoriaId: categoria.id,
+            //   codigo: codigoProducto,
+            // }, queryRunner);
             productosMap.set(sku, producto);
           }
           console.log(producto);
