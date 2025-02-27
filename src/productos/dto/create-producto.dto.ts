@@ -47,6 +47,6 @@ export class CreateVarianteProductoDto {
   precio: string;
 
   @IsOptional()
-  id?: number;
+  id?: string;
 
 }

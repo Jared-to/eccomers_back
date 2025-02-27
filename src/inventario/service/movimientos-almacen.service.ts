@@ -28,7 +28,6 @@ export class MovimientosAlmacenService {
       cantidad,
       descripcion,
       fecha: fechaUTC,
-      codigo_barras: movimientoInventarioDto.codigo_barras
     });
 
     return this.movimientoRepository.save(movimiento);
@@ -39,7 +38,7 @@ export class MovimientosAlmacenService {
     queryRunner: QueryRunner
   ): Promise<MovimientoInventario> {
 
-    const { almacenId, cantidad, productoId, descripcion, codigo_barras } = movimientoInventarioDto;
+    const { almacenId, cantidad, productoId, descripcion } = movimientoInventarioDto;
     const fechaUTC = new Date();
 
     // Busca el almacén usando el QueryRunner
@@ -56,7 +55,6 @@ export class MovimientosAlmacenService {
       cantidad,
       descripcion,
       fecha: fechaUTC,
-      codigo_barras,
     });
 
     // Guarda el movimiento usando el QueryRunner
@@ -76,7 +74,6 @@ export class MovimientosAlmacenService {
       cantidad,
       descripcion,
       fecha: fechaLocal,
-      codigo_barras: movimientoInventarioDto.codigo_barras
     });
 
     return this.movimientoRepository.save(movimiento);
@@ -98,7 +95,6 @@ export class MovimientosAlmacenService {
       cantidad,
       descripcion,
       fecha: fechaLocal,
-      codigo_barras: movimientoInventarioDto.codigo_barras
     });
 
     return queryRunner.manager.save(MovimientoInventario, movimiento);

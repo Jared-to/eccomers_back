@@ -17,6 +17,6 @@ import { VarianteProducto } from './entities/varianteProducto.entity';
     CategoriasModule,
     CloudinaryModule
   ],
-  exports:[ProductosService]
+  exports:[ProductosService,TypeOrmModule]
 })
 export class ProductosModule {}

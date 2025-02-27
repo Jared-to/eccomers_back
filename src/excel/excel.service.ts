@@ -143,7 +143,6 @@ export class ExcelService {
             almacen_id: almacen.id,
             producto_id: producto.id,
             cantidad,
-            codigo_barras: codigoBarras,
             fecha: new Date().toISOString(),
             precio_compra: precioUnitario,
             precio_venta: precioVenta,
@@ -151,7 +150,7 @@ export class ExcelService {
           await queryRunner.manager.save(registroInicial);
 
           let inventario = await queryRunner.manager.findOne(Inventario, {
-            where: { almacen: almacen, product: producto, codigo_barras: codigoBarras },
+            where: { almacen: almacen, product: producto },
           });
 
           if (!inventario) {
@@ -159,7 +158,6 @@ export class ExcelService {
               almacen: almacen,
               product: { id: producto.id },
               stock: cantidad,
-              codigo_barras: codigoBarras,
               precio_compra: precioUnitario,
             });
           } else {
@@ -171,7 +169,6 @@ export class ExcelService {
             almacenId: almacen.id,
             productoId: producto.id,
             cantidad,
-            codigo_barras: codigoBarras,
             descripcion: 'INVENTARIO INICIAL',
           }, queryRunner);
         } catch (error) {

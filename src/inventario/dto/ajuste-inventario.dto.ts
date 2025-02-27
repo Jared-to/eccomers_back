@@ -27,8 +27,6 @@ export class CreateDetalleAjusteDto {
   @IsPositive()
   cantidad: number; 
 
-  @IsString()
-  codigo_barras: string; 
 
   @IsString()
   unidad_medida: string; 

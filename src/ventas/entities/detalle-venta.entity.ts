@@ -2,6 +2,7 @@ import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColum
 import { Venta } from "./venta.entity";
 import { Producto } from "src/productos/entities/producto.entity";
 import { Almacen } from "src/almacenes/entities/almacen.entity";
+import { VarianteProducto } from "src/productos/entities/varianteProducto.entity";
 
 @Entity('detalle_venta')
 export class DetalleVenta {
@@ -14,11 +15,14 @@ export class DetalleVenta {
   })
   @JoinColumn({ name: 'venta_id' })  // Asegúrate de que 'venta_id' sea el nombre correcto de la columna
   venta: Venta;
-  
+
 
   @ManyToOne(() => Producto, { eager: false })
   @JoinColumn({ name: 'producto_id' })
   producto: Producto;
+
+  @Column('text', { nullable: true })
+  nombreVariante: string;
 
   @Column('float')
   precio: number;
@@ -26,8 +30,6 @@ export class DetalleVenta {
   @Column('int')
   cantidad: number;
 
-  @Column('text')
-  codigo_barras: string;
 
   @Column('text')
   unidad_medida: string;

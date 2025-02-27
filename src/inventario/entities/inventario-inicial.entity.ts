@@ -18,8 +18,6 @@ export class inventarioInicial {
   @Column('int')
   cantidad: number;
 
-  @Column('text')
-  codigo_barras: string;
 
   @CreateDateColumn()
   fecha: Date;
@@ -28,7 +26,4 @@ export class inventarioInicial {
   @Column('float')
   precio_compra: number;
 
-
-  @Column('float')
-  precio_venta: number;
 }

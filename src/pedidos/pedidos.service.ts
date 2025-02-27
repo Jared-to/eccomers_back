@@ -168,8 +168,8 @@ export class PedidosService {
       id_producto: pedido.producto.id,
       precio: pedido.precio,
       cantidad: pedido.cantidad,
-      codigo_barras: "0",
       unidad_medida: pedido.unidad_medida,
+      nombreVariante: pedido.variante,
       descuento: 0,
       subtotal: pedido.subtotal
     }))

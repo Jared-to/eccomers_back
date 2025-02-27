@@ -56,6 +56,10 @@ export class CreateDetallePedidoDto {
   productoId: string;
 
   @IsNotEmpty()
+  @IsString()
+  variante: string;
+
+  @IsNotEmpty()
   @IsNumber()
   cantidad: number;
 

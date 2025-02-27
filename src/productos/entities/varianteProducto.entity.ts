@@ -6,13 +6,13 @@ import { Producto } from "./producto.entity";
 export class VarianteProducto {
 
   @PrimaryGeneratedColumn('uuid')
-  id: number;
+  id: string;
 
-  @Column()
+  @Column('text', { unique: true, nullable: true })
   nombre: string;  // Ejemplo: "Mediana", "Grande", "Pequeña"
 
   @Column('decimal', { precision: 10, scale: 2 })
-  precio: string;  
+  precio: string;
 
   @ManyToOne(() => Producto, (producto) => producto.variantes)
   producto: Producto;

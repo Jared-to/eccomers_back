@@ -12,6 +12,4 @@ export class CreateInventarioDto {
   @IsPositive()
   cantidad: number; 
 
-  @IsString()
-  codigo_barras: string; 
 }

@@ -7,14 +7,17 @@ export class CreateDetalleVentaDto {
   @IsNotEmpty()
   id_producto: string;
 
+
+  @IsString()
+  @IsNotEmpty()
+  nombreVariante?:string;
+
   @IsNumber()
   precio: number;
 
   @IsNumber()
   cantidad: number;
 
-  @IsString()
-  codigo_barras: string;
 
   @IsString()
   unidad_medida: string;

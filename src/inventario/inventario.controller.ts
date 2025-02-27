@@ -87,14 +87,6 @@ export class InventarioController {
     return this.inventarioService.obtenerInfoProducto(id);
   }
 
-  @Get('producto-codigo')
-  @Auth(ValidRoles.admin, ValidRoles.user)
-  async obtenerProductoPorCodigo(
-    @Query('codigoBarras') codigoBarras: string,
-    @Query('almacenId') almacenId: string,
-  ) {
-    return this.inventarioService.obtenerProductoPorCodigoBarras(codigoBarras, almacenId);
-  }
 
   @Delete('ajuste/:id')
   async eliminarAjuste(

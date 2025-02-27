@@ -35,16 +35,14 @@ export class InventarioService {
       const inventarios = [];
 
       for (const producto of productos) {
-        const { producto_id, cantidad, codigo_barras, precio_compra, precio_venta } = producto;
+        const { producto_id, cantidad, precio_compra } = producto;
 
         //  Registrar en la tabla `inventarioInicial`
         const registroInicial = this.inventarioInicialRepository.create({
           almacen_id,
           cantidad,
-          codigo_barras,
           fecha: new Date().toISOString(),
           precio_compra,
-          precio_venta,
           producto_id,
         });
 
@@ -52,7 +50,7 @@ export class InventarioService {
 
         //  Actualizar o crear en la tabla `inventario`
         let inventario = await this.inventarioRepository.findOne({
-          where: { almacen: { id: almacen_id }, product: { id: producto_id }, codigo_barras },
+          where: { almacen: { id: almacen_id }, product: { id: producto_id } },
         });
 
         let product = await this.productosService.findOneProducto(producto_id);
@@ -63,7 +61,6 @@ export class InventarioService {
             almacen: almacen,
             product: product,
             stock: cantidad,
-            codigo_barras,
             precio_compra
           });
         } else {
@@ -82,7 +79,6 @@ export class InventarioService {
           productoId: producto_id,
           cantidad,
           descripcion: 'INVENTARIO INICIAL',
-          codigo_barras: codigo_barras
         });
       }
 
@@ -95,10 +91,10 @@ export class InventarioService {
   }
 
   async agregarStock(createInventarioDto: CreateInventarioDto): Promise<Inventario> {
-    const { almacenId, cantidad, productoId, codigo_barras } = createInventarioDto;
+    const { almacenId, cantidad, productoId } = createInventarioDto;
 
     let inventario = await this.inventarioRepository.findOne({
-      where: { almacen: { id: almacenId }, product: { id: productoId }, codigo_barras: codigo_barras },
+      where: { almacen: { id: almacenId }, product: { id: productoId } },
     });
 
     if (!inventario) {
@@ -108,7 +104,6 @@ export class InventarioService {
         almacen: almacen,
         product: product,
         stock: cantidad,
-        codigo_barras,
       });
     } else {
       inventario.stock += cantidad;
@@ -122,10 +117,10 @@ export class InventarioService {
 
   // Descontar stock de un producto en un almacén
   async descontarStock(createInventarioDto: CreateInventarioDto): Promise<Inventario> {
-    const { almacenId, cantidad, productoId, codigo_barras } = createInventarioDto;
+    const { almacenId, cantidad, productoId } = createInventarioDto;
 
     const inventario = await this.inventarioRepository.findOne({
-      where: { almacen: { id: almacenId }, product: { id: productoId }, codigo_barras: codigo_barras },
+      where: { almacen: { id: almacenId }, product: { id: productoId } },
     });
 
     if (!inventario) {
@@ -147,11 +142,11 @@ export class InventarioService {
     createInventarioDto: CreateInventarioDto,
     queryRunner: QueryRunner,
   ): Promise<Inventario> {
-    const { almacenId, cantidad, productoId, codigo_barras } = createInventarioDto;
+    const { almacenId, cantidad, productoId } = createInventarioDto;
 
     // Buscar el inventario existente dentro de la transacción
     let inventario = await queryRunner.manager.findOne(Inventario, {
-      where: { almacen: { id: almacenId }, product: { id: productoId }, codigo_barras },
+      where: { almacen: { id: almacenId }, product: { id: productoId } },
       relations: ['almacen', 'product'],
     });
 
@@ -167,7 +162,6 @@ export class InventarioService {
         almacen,
         product,
         stock: cantidad,
-        codigo_barras,
       });
     } else {
       inventario.stock += cantidad;
@@ -183,11 +177,11 @@ export class InventarioService {
     createInventarioDto: CreateInventarioDto,
     queryRunner: QueryRunner,
   ): Promise<Inventario> {
-    const { almacenId, cantidad, productoId, codigo_barras } = createInventarioDto;
+    const { almacenId, cantidad, productoId } = createInventarioDto;
 
     // Buscar el inventario existente dentro de la transacción
     const inventario = await queryRunner.manager.findOne(Inventario, {
-      where: { almacen: { id: almacenId }, product: { id: productoId }, codigo_barras },
+      where: { almacen: { id: almacenId }, product: { id: productoId } },
       relations: ['almacen', 'product'],
     });
 
@@ -217,7 +211,6 @@ export class InventarioService {
         'producto.descripcion AS descripcion',
         'producto.unidad_medida AS unidad_medida',
         'producto.sku AS sku',
-        'producto.precio_venta AS precio_venta',
         'producto.imagen AS imagen',
         'producto.codigo AS codigo',
         'SUM(inventario.stock) AS stock', // Sumar el stock de todos los almacenes
@@ -227,7 +220,6 @@ export class InventarioService {
       .addGroupBy('producto.descripcion')
       .addGroupBy('producto.unidad_medida')
       .addGroupBy('producto.sku')
-      .addGroupBy('producto.precio_venta')
       .addGroupBy('producto.imagen')
       .addGroupBy('producto.codigo')
       .getRawMany();
@@ -239,14 +231,13 @@ export class InventarioService {
       descripcion: item.descripcion,
       unidad_medida: item.unidad_medida,
       sku: item.sku,
-      precio_venta: parseFloat(item.precio_venta), // Convertir si es necesario
       imagen: item.imagen,
       codigo: item.codigo,
       stock: parseFloat(item.stock), // Asegúrate de devolver el stock como número
     }));
   }
 
-  // Traer productos de un almacén específico
+  // Traer productos de un almacén específico con sus variantes
   async obtenerProductosPorAlmacen(almacenId: string): Promise<any> {
     // Validar si el almacén existe
     const almacen = await this.AlmacenService.findOne(almacenId);
@@ -254,20 +245,19 @@ export class InventarioService {
       throw new NotFoundException(`Almacén con ID ${almacenId} no encontrado`);
     }
 
-    // Obtener productos relacionados al almacén específico con un filtro en el WHERE
+    // Obtener productos con variantes
     const inventario = await this.inventarioRepository
       .createQueryBuilder('inventario')
       .leftJoinAndSelect('inventario.product', 'producto')
       .leftJoinAndSelect('producto.categoria', 'categoria')
       .leftJoinAndSelect('inventario.almacen', 'almacen')
+      .leftJoinAndSelect('producto.variantes', 'variantes') // Unir las variantes
       .select([
         'producto.id AS id_producto',
         'producto.codigo AS codigo',
         'producto.alias AS alias',
         'producto.descripcion AS descripcion',
         'producto.imagen AS imagen',
-        'producto.precio_venta AS precio_venta',
-        'producto.precio_min_venta AS precio_min_venta',
         'producto.sku AS sku',
         'producto.unidad_medida AS unidad_medida',
         'categoria.nombre AS categoria',
@@ -276,20 +266,71 @@ export class InventarioService {
         'inventario.id AS id_inventario',
         'almacen.id AS almacen_id',
         'inventario.stock AS stock',
-        'inventario.codigo_barras AS codigo_barras',
+        'variantes.id AS variante_id',
+        'variantes.nombre AS variante_nombre',
+        'variantes.precio AS variante_precio',
       ])
       .where('producto.estado = true')
-      .andWhere('almacen.id = :almacenId', { almacenId }) // Filtrar por el ID del almacén
+      .andWhere('almacen.id = :almacenId', { almacenId })
       .getRawMany();
 
-    // Construir la respuesta con detalles del almacén y productos
+    // Mapear productos con sus variantes en un formato estructurado
+    const productosMap = new Map();
+
+    inventario.forEach((item) => {
+      const {
+        id_producto,
+        codigo,
+        alias,
+        descripcion,
+        imagen,
+        sku,
+        unidad_medida,
+        categoria,
+        id_categoria,
+        almacen,
+        almacen_id,
+        id_inventario,
+        stock,
+        variante_id,
+        variante_nombre,
+        variante_precio,
+      } = item;
+
+      if (!productosMap.has(id_producto)) {
+        productosMap.set(id_producto, {
+          id_producto,
+          codigo,
+          alias,
+          descripcion,
+          imagen,
+          sku,
+          unidad_medida,
+          categoria: { id: id_categoria, nombre: categoria },
+          almacen: { id: almacen_id, nombre: almacen },
+          id_inventario,
+          stock,
+          variantes: [],
+        });
+      }
+
+      // Agregar variantes al producto si existen
+      if (variante_id) {
+        productosMap.get(id_producto).variantes.push({
+          id: variante_id,
+          nombre: variante_nombre,
+          precio: variante_precio,
+        });
+      }
+    });
+
+    // Devolver la respuesta con los productos agrupados
     return {
       nombre: almacen.nombre,
       ubicacion: almacen.ubicacion,
-      inventario, // Lista de productos filtrados por el almacén
+      inventario: Array.from(productosMap.values()), // Convertir Map a Array
     };
   }
-
   async obtenerAlmacenesPorProducto(productoId: string): Promise<any[]> {
     // Validar si el producto existe
     const producto = await this.productosService.findOneProducto(productoId);
@@ -309,12 +350,10 @@ export class InventarioService {
         'almacen.nombre AS almacen_nombre',
         'inventario.stock AS stock',
         'inventario.precio_compra AS precio_compra',
-        'inventario.codigo_barras AS codigo_barras',
         'producto.alias AS producto_nombre',
         'producto.descripcion AS producto_descripcion',
         'producto.unidad_medida AS unidad_medida',
         'producto.sku AS sku',
-        'producto.precio_venta AS precio_venta',
         'producto.imagen AS imagen',
         'producto.codigo AS codigo',
       ])
@@ -344,20 +383,19 @@ export class InventarioService {
       throw new NotFoundException(`Categoría con ID ${categoriaId} no encontrada`);
     }
 
-    // Obtener productos filtrados por almacén y categoría
+    // Obtener productos con sus variantes filtrados por almacén y categoría
     const inventario = await this.inventarioRepository
       .createQueryBuilder('inventario')
       .leftJoinAndSelect('inventario.product', 'producto')
       .leftJoinAndSelect('producto.categoria', 'categoria')
       .leftJoinAndSelect('inventario.almacen', 'almacen')
+      .leftJoinAndSelect('producto.variantes', 'variante') // <-- Se unen las variantes
       .select([
         'producto.id AS id_producto',
         'producto.codigo AS codigo',
         'producto.alias AS alias',
         'producto.descripcion AS descripcion',
         'producto.imagen AS imagen',
-        'producto.precio_venta AS precio_venta',
-        'producto.precio_min_venta AS precio_min_venta',
         'producto.sku AS sku',
         'producto.unidad_medida AS unidad_medida',
         'categoria.nombre AS categoria',
@@ -366,19 +404,72 @@ export class InventarioService {
         'inventario.id AS id_inventario',
         'almacen.id AS almacen_id',
         'inventario.stock AS stock',
-        'inventario.codigo_barras AS codigo_barras',
+        'variante.id AS id_variante', // ID de la variante
+        'variante.nombre AS nombre_variante', // Nombre de la variante
+        'variante.precio AS precio_variante', // Precio de la variante
       ])
       .where('producto.estado = true')
       .andWhere('almacen.id = :almacenId', { almacenId })
       .andWhere('categoria.id = :categoriaId', { categoriaId }) // Filtrar por categoría
       .getRawMany();
 
-    // Construir la respuesta con detalles del almacén, categoría y productos
+    // Agrupar productos y sus variantes
+    const productosMap = new Map();
+
+    inventario.forEach(item => {
+      const {
+        id_producto,
+        codigo,
+        alias,
+        descripcion,
+        imagen,
+        sku,
+        unidad_medida,
+        id_categoria,
+        categoria,
+        almacen,
+        almacen_id,
+        id_inventario,
+        stock,
+        id_variante,
+        nombre_variante,
+        precio_variante,
+      } = item;
+
+      if (!productosMap.has(id_producto)) {
+        productosMap.set(id_producto, {
+          id_producto,
+          codigo,
+          alias,
+          descripcion,
+          imagen,
+          sku,
+          unidad_medida,
+          id_categoria,
+          categoria,
+          almacen,
+          almacen_id,
+          id_inventario,
+          stock,
+          variantes: []
+        });
+      }
+
+      if (id_variante) {
+        productosMap.get(id_producto).variantes.push({
+          id_variante,
+          nombre_variante,
+          precio_variante,
+        });
+      }
+    });
+
+    // Construir la respuesta
     return {
       nombre_almacen: almacen.nombre,
       ubicacion_almacen: almacen.ubicacion,
       nombre_categoria: categoria.nombre,
-      inventario, // Lista de productos filtrados por el almacén y categoría
+      inventario: Array.from(productosMap.values()), // Convertir el Map a Array
     };
   }
 
@@ -407,33 +498,6 @@ export class InventarioService {
       total_stock: resultado.stock
     }
 
-  }
-
-  async obtenerProductoPorCodigoBarras(codigoBarras: string, almacenId: string): Promise<any> {
-    const producto = await this.inventarioRepository.query(`
-      SELECT 
-        productos.alias AS producto_alias,
-        productos.unidad_medida,
-        productos.sku,
-        inventario.stock
-      FROM inventario
-      INNER JOIN productos ON inventario.producto_id = productos.id
-      WHERE inventario.codigo_barras = $1 AND inventario.almacen_id = $2
-    `, [codigoBarras, almacenId]);
-
-    if (!producto || producto.length === 0) {
-      throw new NotFoundException(
-        `No se encontró un producto con el código de barras "${codigoBarras}" en el almacén con ID "${almacenId}".`,
-      );
-    }
-
-    // Retornar la información solicitada
-    return {
-      alias: producto[0].producto_alias,
-      stock: producto[0].stock,
-      sku: producto[0].sku,
-      unidad_medida: producto[0].unidad_medida,
-    };
   }
 
 

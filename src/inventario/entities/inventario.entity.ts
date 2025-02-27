@@ -27,7 +27,5 @@ export class Inventario {
   @Column('float', { nullable: true })
   precio_compra: number;
 
-  @Column('text')
-  codigo_barras: string;
 
 }

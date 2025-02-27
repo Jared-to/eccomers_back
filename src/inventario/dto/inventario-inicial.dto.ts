@@ -21,12 +21,7 @@ export class ProductoInicialDto {
   @Min(1)
   cantidad: number;
 
-  @IsString()
-  codigo_barras?: string;
-
   @IsDecimal()
   precio_compra?: number;
 
-  @IsDecimal()
-  precio_venta?: number;
 }

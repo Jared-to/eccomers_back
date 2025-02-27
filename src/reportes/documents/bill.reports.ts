@@ -182,26 +182,26 @@ export const billReports = (venta = ventaEjemplo): TDocumentDefinitions => {
             // Filas de los productos
             ...billProducts.map((product) => [
               { text: product.Producto, style: 'tableRow', alignment: 'left' },
-              { text: product.Precio.toFixed(2) , style: 'tableRow', alignment: 'right' },
+              { text: product.Precio.toFixed(2), style: 'tableRow', alignment: 'right' },
               { text: product.Cantidad.toString(), style: 'tableRow', alignment: 'right' },
-              { text: product.Descuento.toFixed(2) , style: 'tableRow', alignment: 'right' },
-              { text: product.Total.toFixed(2) , style: 'tableRow', alignment: 'right' },
+              { text: product.Descuento.toFixed(2), style: 'tableRow', alignment: 'right' },
+              { text: product.Total.toFixed(2), style: 'tableRow', alignment: 'right' },
             ]),
             // Subtotal, descuento y total neto
             [
               { text: 'Subtotal', colSpan: 4, alignment: 'right', style: 'totalRow' },
               {}, {}, {},
-              { text: venta.subtotal.toFixed(2) , style: 'totalRow' },
+              { text: venta.subtotal.toFixed(2), style: 'totalRow' },
             ],
             [
               { text: 'Descuento', colSpan: 4, alignment: 'right', style: 'totalRow' },
               {}, {}, {},
-              { text: venta.descuento.toFixed(2) , style: 'totalRow' },
+              { text: venta.descuento.toFixed(2), style: 'totalRow' },
             ],
             [
               { text: 'Total Neto', colSpan: 4, alignment: 'right', style: 'totalRow' },
               {}, {}, {},
-              { text: venta.total.toFixed(2) , style: 'totalRow' },
+              { text: venta.total.toFixed(2), style: 'totalRow' },
             ],
           ],
         },

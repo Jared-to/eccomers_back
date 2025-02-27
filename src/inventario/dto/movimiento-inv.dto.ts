@@ -16,6 +16,4 @@ export class MovimientoInventarioDto {
   @IsString()
   descripcion?: string;
   
-  @IsString()
-  codigo_barras: string;
 }

@@ -13,6 +13,9 @@ export class DetallePedido {
   @JoinColumn({ name: 'producto_id' })
   producto: Producto;
 
+  @Column('text')
+  variante: string;
+
   @Column('int')
   cantidad: number;
 

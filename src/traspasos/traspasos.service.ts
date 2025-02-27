@@ -63,14 +63,12 @@ export class TraspasosService {
         await this.inventarioService.agregarStockTransactional({
           almacenId: almaceDestino.id,
           cantidad: element.cantidad,
-          codigo_barras: inventario.codigo_barras,
           productoId: inventario.product.id,
         }, queryRunner);
 
         await this.movimientosService.registrarIngresoTransaccion({
           almacenId: almaceDestino.id,
           cantidad: element.cantidad,
-          codigo_barras: inventario.codigo_barras,
           productoId: inventario.product.id,
           descripcion: 'Traslado',
         }, queryRunner);
@@ -78,14 +76,12 @@ export class TraspasosService {
         await this.inventarioService.descontarStockTransactional({
           almacenId: almaceOrigen.id,
           cantidad: element.cantidad,
-          codigo_barras: inventario.codigo_barras,
           productoId: inventario.product.id,
         }, queryRunner);
 
         await this.movimientosService.registrarSalidaTransaccion({
           almacenId: almaceOrigen.id,
           cantidad: element.cantidad,
-          codigo_barras: inventario.codigo_barras,
           productoId: inventario.product.id,
           descripcion: 'Traslado',
         }, queryRunner);
@@ -180,7 +176,7 @@ export class TraspasosService {
           await this.inventarioService.agregarStockTransactional({
             almacenId: traspasoExistente.almacenOrigen.id,
             cantidad: detalle.cantidad,
-            codigo_barras: inventario.codigo_barras,
+
             productoId: inventario.product.id,
           }, queryRunner);
 
@@ -189,7 +185,7 @@ export class TraspasosService {
           await this.inventarioService.descontarStockTransactional({
             almacenId: traspasoExistente.almacenDestino.id,
             cantidad: detalle.cantidad,
-            codigo_barras: inventario.codigo_barras,
+
             productoId: inventario.product.id,
           }, queryRunner);
 
@@ -224,7 +220,6 @@ export class TraspasosService {
         await this.inventarioService.agregarStockTransactional({
           almacenId: almaceDestino.id,
           cantidad: element.cantidad,
-          codigo_barras: inventario.codigo_barras,
           productoId: inventario.product.id,
         }, queryRunner);
         if (detalleAnterior) {
@@ -232,7 +227,7 @@ export class TraspasosService {
           await this.movimientosService.registrarIngresoTransaccion({
             almacenId: almaceDestino.id,
             cantidad: element.cantidad - detalleAnterior.cantidad,
-            codigo_barras: inventario.codigo_barras,
+
             productoId: inventario.product.id,
             descripcion: 'Traslado Editado'
           }, queryRunner)
@@ -240,7 +235,6 @@ export class TraspasosService {
           await this.movimientosService.registrarIngresoTransaccion({
             almacenId: almaceDestino.id,
             cantidad: element.cantidad,
-            codigo_barras: inventario.codigo_barras,
             productoId: inventario.product.id,
             descripcion: 'Traslado Editado'
           }, queryRunner)
@@ -249,7 +243,6 @@ export class TraspasosService {
         await this.inventarioService.descontarStockTransactional({
           almacenId: almaceOrigen.id,
           cantidad: element.cantidad,
-          codigo_barras: inventario.codigo_barras,
           productoId: inventario.product.id,
         }, queryRunner);
         if (detalleAnterior) {
@@ -257,7 +250,6 @@ export class TraspasosService {
           await this.movimientosService.registrarSalidaTransaccion({
             almacenId: almaceOrigen.id,
             cantidad: element.cantidad - detalleAnterior.cantidad,
-            codigo_barras: inventario.codigo_barras,
             productoId: inventario.product.id,
             descripcion: 'Traslado Editado'
           }, queryRunner)
@@ -266,7 +258,6 @@ export class TraspasosService {
           await this.movimientosService.registrarSalidaTransaccion({
             almacenId: almaceOrigen.id,
             cantidad: element.cantidad,
-            codigo_barras: inventario.codigo_barras,
             productoId: inventario.product.id,
             descripcion: 'Traslado Editado'
           }, queryRunner)
@@ -313,14 +304,14 @@ export class TraspasosService {
           await this.inventarioService.agregarStockTransactional({
             almacenId: traspaso.almacenOrigen.id,
             cantidad: detalle.cantidad,
-            codigo_barras: inventario.codigo_barras,
+
             productoId: inventario.product.id,
           }, queryRunner);
           //registrar movimiento ingreso
           await this.movimientosService.registrarIngresoTransaccion({
             almacenId: traspaso.almacenOrigen.id,
             cantidad: detalle.cantidad,
-            codigo_barras: inventario.codigo_barras,
+
             productoId: inventario.product.id,
             descripcion: 'Traslado Eliminado'
           }, queryRunner)
@@ -328,14 +319,14 @@ export class TraspasosService {
           await this.inventarioService.descontarStockTransactional({
             almacenId: traspaso.almacenDestino.id,
             cantidad: detalle.cantidad,
-            codigo_barras: inventario.codigo_barras,
+
             productoId: inventario.product.id,
           }, queryRunner);
           //registrar movimiento salida
           await this.movimientosService.registrarSalidaTransaccion({
             almacenId: traspaso.almacenDestino.id,
             cantidad: detalle.cantidad,
-            codigo_barras: inventario.codigo_barras,
+
             productoId: inventario.product.id,
             descripcion: 'Traslado Eliminado'
           }, queryRunner)

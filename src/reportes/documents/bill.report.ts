@@ -70,11 +70,12 @@ export const billReport = (venta: Venta): TDocumentDefinitions => {
     No: index + 1,
     Unidad: detalle.unidad_medida || 'No especificada',
     Codigo: detalle.producto?.sku || 'Sin código',
-    Producto: detalle.producto?.descripcion || 'Producto desconocido',
+    Producto: detalle.producto?.alias || 'Producto desconocido',
     Precio: detalle.precio,
     Cantidad: detalle.cantidad,
     Total: detalle.subtotal,
     Descuento: detalle.descuento || 0,
+    variante: detalle.nombreVariante
   }));
 
   return {
@@ -151,7 +152,7 @@ export const billReport = (venta: Venta): TDocumentDefinitions => {
             ...billProducts.map((product) => [
               { text: product.Unidad, style: 'tableRow' },
               { text: product.Codigo, style: 'tableRow' },
-              { text: product.Producto, style: 'tableRow' },
+              { text: `${product.Producto} - ${product.variante}`, style: 'tableRow' },
               { text: product.Precio.toFixed(2) + ' Bs.', style: 'tableRow' },
               { text: product.Cantidad, style: 'tableRow' },
               { text: (product.Total + product.Descuento).toFixed(2) + ' Bs.', style: 'tableRow' },

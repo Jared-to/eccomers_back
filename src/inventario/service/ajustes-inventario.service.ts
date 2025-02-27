@@ -59,7 +59,6 @@ export class AjustesInventario {
           ajuste_inventario: savedAjuste,
           producto_id: detalleDto.producto_id,
           cantidad: detalleDto.cantidad,
-          codigo_barras: detalleDto.codigo_barras,
           unidad_medida: detalleDto.unidad_medida,
           tipo: detalleDto.tipo,
         });
@@ -111,7 +110,7 @@ export class AjustesInventario {
 
     for (const detalleExistente of existingAjuste.detalles) {
       const detalleActualizado = detalles.find(
-        (detalle) => detalle.codigo_barras === detalleExistente.codigo_barras && detalle.producto_id === detalleExistente.producto_id
+        (detalle) => detalle.producto_id === detalleExistente.producto_id
       );
 
       if (detalleActualizado) {
@@ -124,7 +123,6 @@ export class AjustesInventario {
               this.inventarioService.descontarStock({
                 almacenId: almacen_id,
                 cantidad: detalleExistente.cantidad,
-                codigo_barras: detalleExistente.codigo_barras,
                 productoId: detalleExistente.producto_id,
               })
             );
@@ -134,7 +132,6 @@ export class AjustesInventario {
               this.inventarioService.agregarStock({
                 almacenId: almacen_id,
                 cantidad: detalleExistente.cantidad,
-                codigo_barras: detalleExistente.codigo_barras,
                 productoId: detalleExistente.producto_id,
               })
             );
@@ -147,7 +144,6 @@ export class AjustesInventario {
               this.inventarioService.agregarStock({
                 almacenId: almacen_id,
                 cantidad: detalleActualizado.cantidad + detalleExistente.cantidad,
-                codigo_barras: detalleActualizado.codigo_barras,
                 productoId: detalleActualizado.producto_id,
               })
             );
@@ -157,7 +153,6 @@ export class AjustesInventario {
                 cantidad: detalleActualizado.cantidad + detalleExistente.cantidad,
                 productoId: detalleActualizado.producto_id,
                 descripcion: 'Editar ajuste',
-                codigo_barras: detalleActualizado.codigo_barras,
               })
             );
           } else if (detalleActualizado.tipo === 'decrementar') {
@@ -165,7 +160,6 @@ export class AjustesInventario {
               this.inventarioService.descontarStock({
                 almacenId: almacen_id,
                 cantidad: detalleActualizado.cantidad + detalleExistente.cantidad,
-                codigo_barras: detalleActualizado.codigo_barras,
                 productoId: detalleActualizado.producto_id,
               })
             );
@@ -175,7 +169,6 @@ export class AjustesInventario {
                 cantidad: detalleActualizado.cantidad + detalleExistente.cantidad,
                 productoId: detalleActualizado.producto_id,
                 descripcion: 'Editar ajuste',
-                codigo_barras: detalleActualizado.codigo_barras,
               })
             );
           }
@@ -191,7 +184,6 @@ export class AjustesInventario {
                 this.inventarioService.agregarStock({
                   almacenId: almacen_id,
                   cantidad: diferenciaCantidad,
-                  codigo_barras: detalleActualizado.codigo_barras,
                   productoId: detalleActualizado.producto_id,
                 })
               );
@@ -201,7 +193,6 @@ export class AjustesInventario {
                   cantidad: diferenciaCantidad,
                   productoId: detalleActualizado.producto_id,
                   descripcion: 'Ajuste Editado',
-                  codigo_barras: detalleActualizado.codigo_barras,
                 })
               );
             } else {
@@ -212,7 +203,6 @@ export class AjustesInventario {
                 this.inventarioService.descontarStock({
                   almacenId: almacen_id,
                   cantidad: cantidadARetirar,
-                  codigo_barras: detalleActualizado.codigo_barras,
                   productoId: detalleActualizado.producto_id,
                 })
               );
@@ -222,7 +212,6 @@ export class AjustesInventario {
                   cantidad: cantidadARetirar,
                   productoId: detalleActualizado.producto_id,
                   descripcion: 'Ajuste Editado',
-                  codigo_barras: detalleActualizado.codigo_barras,
                 })
               );
             }
@@ -242,7 +231,6 @@ export class AjustesInventario {
           this.inventarioService.descontarStock({
             almacenId: almacen_id,
             cantidad: detalleExistente.cantidad,
-            codigo_barras: detalleExistente.codigo_barras,
             productoId: detalleExistente.producto_id,
           })
         );
@@ -252,7 +240,7 @@ export class AjustesInventario {
 
     // Agregar nuevos detalles
     const nuevosDetalles = detalles.filter(
-      (detalle) => !existingAjuste.detalles.some((d) => d.codigo_barras === detalle.codigo_barras && d.producto_id === detalle.producto_id)
+      (detalle) => !existingAjuste.detalles.some((d) => d.producto_id === detalle.producto_id)
     );
 
     for (const nuevoDetalle of nuevosDetalles) {
@@ -261,7 +249,6 @@ export class AjustesInventario {
           ajuste_inventario: existingAjuste,
           producto_id: nuevoDetalle.producto_id,
           cantidad: nuevoDetalle.cantidad,
-          codigo_barras: nuevoDetalle.codigo_barras,
           unidad_medida: nuevoDetalle.unidad_medida,
           tipo: nuevoDetalle.tipo,
         })
@@ -304,7 +291,6 @@ export class AjustesInventario {
         'detalle.id',
         'detalle.producto_id',
         'detalle.cantidad',
-        'detalle.codigo_barras',
       ])
       .getMany();
 
@@ -325,7 +311,6 @@ export class AjustesInventario {
         id: detalle.id,
         producto_id: detalle.producto_id,
         cantidad: detalle.cantidad,
-        codigo_barras: detalle.codigo_barras,
       })),
     }));
   }
@@ -340,7 +325,7 @@ export class AjustesInventario {
       .leftJoin(
         'inventario',
         'inventario',
-        'inventario.codigo_barras = detalle.codigo_barras AND inventario.almacen = almacen.id'
+        'inventario.almacen = almacen.id'
       )
       .select([
         'ajuste.id',
@@ -352,7 +337,6 @@ export class AjustesInventario {
         'usuario.fullName',
         'detalle.id',
         'detalle.cantidad',
-        'detalle.codigo_barras',
         'detalle.unidad_medida',
         'detalle.tipo',
         'producto.id',
@@ -390,7 +374,6 @@ export class AjustesInventario {
         alias: detalle.producto.alias,
         cantidad: detalle.cantidad,
         codigo: detalle.producto.codigo,
-        codigo_barras: detalle.codigo_barras,
         unidad_medida: detalle.unidad_medida,
         descripcion: detalle.producto.descripcion,
         tipo: detalle.tipo,
@@ -420,7 +403,6 @@ export class AjustesInventario {
           this.inventarioService.descontarStock({
             almacenId: existingAjuste.almacen_id,
             cantidad: detalle.cantidad,
-            codigo_barras: detalle.codigo_barras,
             productoId: detalle.producto_id,
           })
         );
@@ -429,7 +411,6 @@ export class AjustesInventario {
           cantidad: detalle.cantidad,
           productoId: detalle.producto_id,
           descripcion: 'Ajuste Eliminado',
-          codigo_barras: detalle.codigo_barras,
         });
       } else if (detalle.tipo === 'decrementar') {
         // Si se decrementó, sumar al stock
@@ -437,7 +418,6 @@ export class AjustesInventario {
           this.inventarioService.agregarStock({
             almacenId: existingAjuste.almacen_id,
             cantidad: detalle.cantidad,
-            codigo_barras: detalle.codigo_barras,
             productoId: detalle.producto_id,
           })
         );
@@ -447,7 +427,6 @@ export class AjustesInventario {
           cantidad: detalle.cantidad,
           productoId: detalle.producto_id,
           descripcion: 'Ajuste eliminado.',
-          codigo_barras: detalle.codigo_barras,
         });
       }
     }
@@ -468,7 +447,6 @@ export class AjustesInventario {
       await this.inventarioService.agregarStock({
         almacenId: almacen_id,
         cantidad: detalle.cantidad,
-        codigo_barras: detalle.codigo_barras,
         productoId: detalle.producto_id
       })
 
@@ -477,14 +455,12 @@ export class AjustesInventario {
         cantidad: detalle.cantidad,
         productoId: detalle.producto_id,
         descripcion: 'Ajuste',
-        codigo_barras: detalle.codigo_barras,
       });
     } else {
 
       await this.inventarioService.descontarStock({
         almacenId: almacen_id,
         cantidad: detalle.cantidad,
-        codigo_barras: detalle.codigo_barras,
         productoId: detalle.producto_id,
       })
       await this.movimientosService.registrarSalida({
@@ -492,7 +468,6 @@ export class AjustesInventario {
         cantidad: detalle.cantidad,
         productoId: detalle.producto_id,
         descripcion: 'Ajuste',
-        codigo_barras: detalle.codigo_barras,
       });
     }
   }

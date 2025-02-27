@@ -22,9 +22,6 @@ export class DetalleAjuste {
   cantidad: number;
 
   @Column('text')
-  codigo_barras: string;
-
-  @Column('text')
   unidad_medida: string;
 
   @Column('text')

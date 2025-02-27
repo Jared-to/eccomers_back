@@ -14,6 +14,7 @@ import { CajasService } from 'src/cajas/cajas.service';
 import { AuthService } from 'src/auth/auth.service';
 import { Cobros } from './entities/cobros.entity';
 import { User } from 'src/auth/entities/user.entity';
+import { VarianteProducto } from 'src/productos/entities/varianteProducto.entity';
 
 @Injectable()
 export class VentasService {
@@ -24,6 +25,8 @@ export class VentasService {
     private readonly detallesRepository: Repository<DetalleVenta>,
     @InjectRepository(Producto)
     private readonly productoRepository: Repository<Producto>,
+    @InjectRepository(VarianteProducto)
+    private readonly varianteRepository: Repository<VarianteProducto>,
     @InjectRepository(Cobros)
     private readonly cobrosRepository: Repository<Cobros>,
     private readonly inventarioService: InventarioService,
@@ -83,11 +86,12 @@ export class VentasService {
     const queryRunner = this.ventasRepository.manager.connection.createQueryRunner();
     await queryRunner.startTransaction();
 
+
     try {
       // Buscar la venta existente con sus detalles
       const venta = await this.findOne(id);
+
       const { detalles, ...ventaData } = updateVentaDto;
-      let detallesAEliminar: DetalleVenta[] = [];
 
       const client = await queryRunner.manager.findOne(Cliente, { where: { id: updateVentaDto.cliente } });
 
@@ -100,10 +104,6 @@ export class VentasService {
       // Guardar la venta actualizada
       const VG = await queryRunner.manager.save(Venta, venta);
 
-      // Mapear los detalles actuales por ID del producto
-      const detallesActualesMap = new Map(
-        venta.detalles.map(detalle => [detalle.producto.id, detalle])
-      );
 
       if (venta.almacen.id !== updateVentaDto.almacen) {
         for (const detalle of venta.detalles) {
@@ -111,7 +111,6 @@ export class VentasService {
           await this.registrarMovimiento(
             {
               cantidad: detalle.cantidad,
-              codigo_barras: detalle.codigo_barras,
               descuento: detalle.descuento,
               precio: detalle.precio,
               id_producto: detalle.producto.id,
@@ -127,7 +126,6 @@ export class VentasService {
           await this.registrarMovimiento(
             {
               cantidad: detalle.cantidad,
-              codigo_barras: detalle.codigo_barras,
               descuento: detalle.descuento,
               precio: detalle.precio,
               id_producto: detalle.producto.id,
@@ -141,37 +139,51 @@ export class VentasService {
         }
       } else {
 
-        // Identificar productos modificados o eliminados
-        const detallesAModificar = detalles.filter(detalleNuevo => {
-          const detalleActual = detallesActualesMap.get(detalleNuevo.id_producto);
-          return !detalleActual || detalleActual.cantidad !== detalleNuevo.cantidad;
-        });
-
-        // Identificar productos nuevos que antes no estaban
-        const productosNuevos = detalles.filter(detalleNuevo =>
-          !detallesActualesMap.has(detalleNuevo.id_producto)
+        // Mapear detalles actuales (antes de la actualización)
+        const detallesActualesMap = new Map(
+          venta.detalles.map(detalle => [`${detalle.producto.id}-${detalle.nombreVariante}`, detalle])
+        );
+        // Mapear los nuevos detalles (después de la actualización)
+        const detallesNuevosMap = new Map(
+          detalles.map(detalle => [`${detalle.id_producto}-${detalle.nombreVariante}`, detalle])
         );
 
-        // 1. Devolver al inventario solo los productos cuyo detalle cambió o fue eliminado
-        for (const detalleActual of venta.detalles) {
-          if (detallesAModificar.some(detalle => detalle.id_producto === detalleActual.producto.id)) {
-            detallesAEliminar.push(detalleActual);
+        // **Detectar detalles eliminados**: estaban antes pero ya no están en la nueva lista
+        const detallesAEliminar = venta.detalles.filter(detalleActual => {
+          const clave = `${detalleActual.producto.id}-${detalleActual.nombreVariante}`;
+          return !detallesNuevosMap.has(clave); // Si no está en los nuevos detalles, debe eliminarse
+        });
 
-            await this.registrarMovimiento(
-              {
-                cantidad: detalleActual.cantidad,
-                codigo_barras: detalleActual.codigo_barras,
-                descuento: detalleActual.descuento,
-                precio: detalleActual.precio,
-                id_producto: detalleActual.producto.id,
-                subtotal: detalleActual.subtotal,
-                unidad_medida: detalleActual.unidad_medida,
-              },
-              'devolucion',
-              `Ajuste Venta - ${venta.codigo}`,
-              ventaData.almacen
-            );
-          }
+        // **Detectar productos modificados**: existen en ambas listas pero con cambios
+        const detallesAModificar = detalles.filter(detalleNuevo => {
+          const clave = `${detalleNuevo.id_producto}-${detalleNuevo.nombreVariante}`;
+          const detalleActual = detallesActualesMap.get(clave);
+          return detalleActual && detalleActual.cantidad !== detalleNuevo.cantidad;
+        });
+
+        // **Detectar productos nuevos**: no estaban antes y ahora sí están en la lista
+        const productosNuevos = detalles.filter(detalleNuevo => {
+          const clave = `${detalleNuevo.id_producto}-${detalleNuevo.nombreVariante}`;
+          return !detallesActualesMap.has(clave); // Si no estaba antes, es nuevo
+        });
+        console.log(detallesAModificar);
+
+
+        // **Procesar productos eliminados**
+        for (const detalleActual of detallesAEliminar) {
+          await this.registrarMovimiento(
+            {
+              cantidad: detalleActual.cantidad,
+              descuento: detalleActual.descuento,
+              precio: detalleActual.precio,
+              id_producto: detalleActual.producto.id,
+              subtotal: detalleActual.subtotal,
+              unidad_medida: detalleActual.unidad_medida,
+            },
+            'devolucion',
+            `Producto Eliminado - ${venta.codigo}`,
+            ventaData.almacen
+          );
         }
 
         // 2. Agregar nuevos detalles y registrar movimiento
@@ -183,7 +195,6 @@ export class VentasService {
           await this.registrarMovimiento(
             {
               cantidad: element.cantidad,
-              codigo_barras: element.codigo_barras,
               descuento: element.descuento,
               precio: element.precio,
               id_producto: element.id_producto,
@@ -196,17 +207,18 @@ export class VentasService {
           );
         }
 
+
         // 3. Agregar productos nuevos que antes no existían
         if (productosNuevos.length > 0) {
           await this.guardarDetallesVenta(queryRunner, productosNuevos, VG);
         }
+
 
         for (const element of productosNuevos) {
 
           await this.registrarMovimiento(
             {
               cantidad: element.cantidad,
-              codigo_barras: element.codigo_barras,
               descuento: element.descuento,
               precio: element.precio,
               id_producto: element.id_producto,
@@ -220,6 +232,10 @@ export class VentasService {
         }
         // 5. Eliminar solo los detalles que cambiaron o fueron eliminados
         if (detallesAEliminar.length > 0) {
+          await queryRunner.manager.remove(DetalleVenta, detallesAEliminar);
+        }
+        // 5. Eliminar solo los detalles que cambiaron o fueron eliminados
+        if (detallesAModificar.length > 0) {
           await queryRunner.manager.remove(DetalleVenta, detallesAEliminar);
         }
       }
@@ -291,9 +307,8 @@ export class VentasService {
   async findOne(id: string): Promise<Venta> {
     const venta = await this.ventasRepository.findOne({
       where: { id },
-      relations: ['detalles', 'almacen', 'detalles.producto', 'cliente', 'vendedor'],
+      relations: ['detalles', 'almacen', 'detalles.producto', 'detalles', 'cliente', 'vendedor'],
     });
-
 
     if (!venta) {
       throw new NotFoundException(`Venta con ID ${id} no encontrada`);
@@ -305,7 +320,7 @@ export class VentasService {
   async findOneEdit(id: string): Promise<Venta> {
     const venta = await this.ventasRepository.findOne({
       where: { id },
-      relations: ['detalles', 'detalles.producto', 'cliente', 'vendedor', 'cobros', 'almacen'],
+      relations: ['detalles', 'detalles.producto', 'detalles', 'cliente', 'vendedor', 'cobros', 'almacen'],
     });
 
     if (!venta) {
@@ -322,7 +337,6 @@ export class VentasService {
         .select('i.stock')
         .where('i.product = :id_producto', { id_producto: detalle.producto.id })
         .andWhere('i.almacen = :id_almacen', { id_almacen: venta.almacen.id })
-        .andWhere('i.codigo_barras = :codigo_barras', { codigo_barras: detalle.codigo_barras })
         .getRawOne();
 
       // Agregamos el stock al detalle correspondiente
@@ -361,7 +375,6 @@ export class VentasService {
           {
 
             cantidad: detalle.cantidad,
-            codigo_barras: detalle.codigo_barras,
             descuento: detalle.descuento,
             precio: detalle.precio,
             id_producto: detalle.producto.id,
@@ -430,7 +443,6 @@ export class VentasService {
       await this.inventarioService.descontarStock({
         almacenId: almacen,
         cantidad: detalle.cantidad,
-        codigo_barras: detalle.codigo_barras,
         productoId: detalle.id_producto,
       });
       await this.movimientosService.registrarSalida({
@@ -438,13 +450,11 @@ export class VentasService {
         cantidad: detalle.cantidad,
         productoId: detalle.id_producto,
         descripcion: descripcion,
-        codigo_barras: detalle.codigo_barras,
       });
     } else {
       await this.inventarioService.agregarStock({
         almacenId: almacen,
         cantidad: detalle.cantidad,
-        codigo_barras: detalle.codigo_barras,
         productoId: detalle.id_producto,
       });
       await this.movimientosService.registrarIngreso({
@@ -452,24 +462,23 @@ export class VentasService {
         cantidad: detalle.cantidad,
         productoId: detalle.id_producto,
         descripcion: descripcion,
-        codigo_barras: detalle.codigo_barras,
       });
     }
   }
 
   private async guardarDetallesVenta(queryRunner, detalles: CreateDetalleVentaDto[], venta: Venta): Promise<void> {
 
-
     for (const detalle of detalles) {
       const producto = await this.productoRepository.findOne({ where: { id: detalle.id_producto } });
-
-      if (!producto) {
+      const variant = await this.varianteRepository.findOne({ where: { nombre: detalle.nombreVariante } });
+      if (!producto || !variant) {
         throw new NotFoundException('Producto  no encontrado');
       }
 
       const detalleVenta = queryRunner.manager.create(DetalleVenta, {
         ...detalle,
         producto,
+        nombreVariante: variant.nombre,
         venta,
       });
       await queryRunner.manager.save(DetalleVenta, detalleVenta);
