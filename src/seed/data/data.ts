@@ -10,6 +10,7 @@ export const createUserSeed: CreateUserDto = {
   fullName: "Items.bo",
   celular: "75915881",
   roles: ["admin"],
+  foto: 'https://res.cloudinary.com/dhdxemsr1/image/upload/v1740754107/vqjnmszqdhwhsqdprgwn.jpg'
 };
 
 export const createAlmacen: CreateAlmacenDto = {
@@ -25,6 +26,6 @@ export const createCliente: CreateClienteDto = {
 };
 
 export const createCategoria: CreateCategoriaDto = {
-   descripcion:'Categoria Incial',
-   nombre:'General',
+  descripcion: 'Categoria Incial',
+  nombre: 'General',
 };

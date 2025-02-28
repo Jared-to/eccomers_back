@@ -37,6 +37,9 @@ export class User {
   })
   roles: string[];
 
+  @Column('text', { nullable: true })
+  foto: string;
+
   // Relación ManyToOne: Un usuario pertenece a un solo almacén
   @ManyToOne(() => Almacen, almacen => almacen.usuarios, { nullable: true })
   almacen: Almacen;

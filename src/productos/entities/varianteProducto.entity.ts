@@ -8,7 +8,7 @@ export class VarianteProducto {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column('text', { unique: true, nullable: true })
+  @Column('text', { nullable: true })
   nombre: string;  // Ejemplo: "Mediana", "Grande", "Pequeña"
 
   @Column('decimal', { precision: 10, scale: 2 })

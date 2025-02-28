@@ -185,6 +185,31 @@ export class VentasService {
             ventaData.almacen
           );
         }
+        // **Procesar detalles modificados (devolver inventario antes de actualizar)**
+        for (const detalleNuevo of detallesAModificar) {
+          const clave = `${detalleNuevo.id_producto}-${detalleNuevo.nombreVariante}`;
+          const detalleAntiguo = detallesActualesMap.get(clave);
+
+          if (detalleAntiguo) {
+            // Devolver la cantidad anterior al inventario
+            await this.registrarMovimiento(
+              {
+                cantidad: detalleAntiguo.cantidad,
+                descuento: detalleAntiguo.descuento,
+                precio: detalleAntiguo.precio,
+                id_producto: detalleAntiguo.producto.id,
+                subtotal: detalleAntiguo.subtotal,
+                unidad_medida: detalleAntiguo.unidad_medida,
+              },
+              'devolucion',
+              `Ajuste de Venta - ${venta.codigo}`,
+              ventaData.almacen
+            );
+
+            // Eliminar el detalle antiguo
+            await queryRunner.manager.remove(DetalleVenta, detalleAntiguo);
+          }
+        }
 
         // 2. Agregar nuevos detalles y registrar movimiento
         if (detallesAModificar.length > 0) {
@@ -470,7 +495,7 @@ export class VentasService {
 
     for (const detalle of detalles) {
       const producto = await this.productoRepository.findOne({ where: { id: detalle.id_producto } });
-      const variant = await this.varianteRepository.findOne({ where: { nombre: detalle.nombreVariante } });
+      const variant = await this.varianteRepository.findOne({ where: { nombre: detalle.nombreVariante, producto: { id: detalle.id_producto } } });
       if (!producto || !variant) {
         throw new NotFoundException('Producto  no encontrado');
       }
