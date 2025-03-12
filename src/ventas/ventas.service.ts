@@ -48,6 +48,7 @@ export class VentasService {
       // Crear y guardar la venta
       const venta = this.ventasRepository.create({
         ...ventaData,
+        fecha: new Date(),
         vendedor: { id: ventaData.vendedor },
         caja: { id: ventaData.cajaId },
         cliente: { id: ventaData.cliente },
@@ -441,10 +442,10 @@ export class VentasService {
       .select('detalle_venta.producto_id', 'productoId')
       .addSelect('SUM(detalle_venta.cantidad)', 'totalCantidad')
       .addSelect('SUM(detalle_venta.subtotal)', 'totalSubtotal')
-      .addSelect('producto.descripcion', 'productoDescripcion') // Agregar descripción
+      .addSelect('producto.alias', 'productoDescripcion') // Agregar descripción
       .innerJoin('detalle_venta.producto', 'producto') // Unir con la tabla 'producto'
       .groupBy('detalle_venta.producto_id')
-      .addGroupBy('producto.descripcion') // Agrupar por descripción también
+      .addGroupBy('producto.alias') // Agrupar por descripción también
       .orderBy('SUM(detalle_venta.cantidad)', 'DESC')
       .limit(5)
       .getRawMany();

@@ -15,6 +15,12 @@ export class ConfigController {
     return this.configService.asignarQR(file);
   }
 
+  @Patch('imagen')
+  @UseInterceptors(FileInterceptor('file'))
+  colocarImagen(@UploadedFile() file?: Express.Multer.File,) {
+    return this.configService.asignarImagen(file);
+  }
+
   @Patch('redes')
   updateConfig(@Body() updateConfigDto: ConfigDto) {
 

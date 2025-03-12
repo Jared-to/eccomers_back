@@ -10,6 +10,9 @@ export class Config {
   imagenQR: string;
 
   @Column('text', { nullable: true })
+  imagenPrincipal: string;
+
+  @Column('text', { nullable: true })
   linkFacebook: string;
 
   @Column('text', { nullable: true })

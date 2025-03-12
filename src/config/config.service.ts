@@ -15,7 +15,8 @@ export class ConfigService {
   async configInicial(): Promise<Config> {
     let config = await this.configRepository.create(
       {
-        imagenQR: 'qr'
+        imagenQR: 'qr',
+        imagenPrincipal:'imagen'
       }
     );
 
@@ -37,7 +38,22 @@ export class ConfigService {
 
     return this.configRepository.save(config)
   }
+  async asignarImagen(file: Express.Multer.File) {
+    const config = await this.configRepository.findOne({ where: { estado: true } });
+    let imageUrl;
+    if (file) {
+      if (config.imagenPrincipal !== 'imagen') {
+        const publicId = this.extractPublicId(config.imagenPrincipal);
+        await this.cloudinaryService.deleteFile(publicId);
+      }
+      // Subir imágenes a Cloudinary
+      const uploadPromises = await this.cloudinaryService.uploadFile(file);
+      imageUrl = uploadPromises.secure_url;
+    }
+    config.imagenPrincipal = imageUrl;
 
+    return this.configRepository.save(config)
+  }
   async updateConfig(updateConfigDto: ConfigDto): Promise<Config> {
     let config = await this.configRepository.findOne({ where: { estado: true } });
     if (!config) {
