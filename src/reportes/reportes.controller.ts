@@ -36,7 +36,7 @@ export class ReportesController {
   //Reporte de ventas rollo
   @Get('ventas/rollo/:id')
   async obtenerPdfVentaRollo(@Param('id') id: string, @Res() response: Response) {
-    const pdfDoc = await this.reportesService.obtenerPdfVentaRollo(id);
+    const pdfDoc = await this.reportesService.obtenerPdfVenta2(id);
 
     response.setHeader('Content-Type', 'application/pdf');
     response.setHeader(
@@ -84,10 +84,10 @@ export class ReportesController {
     pdfDoc.pipe(response);
     pdfDoc.end();
   }
-  @Get('pedido/:id')
-  async obtenerPdfPedido(@Param('id') id: string, @Res() response: Response) {
+  @Get('pedido/:id/:tipo')
+  async obtenerPdfPedido(@Param('id') id: string, @Param('tipo') tipo: string, @Res() response: Response) {
     // Llamar al servicio para obtener el documento PDF
-    const pdfDoc = await this.reportesService.obtenerPdfPedido(id);
+    const pdfDoc = await this.reportesService.obtenerPdfPedido(id, tipo);
 
     // Configurar los encabezados de la respuesta
     response.setHeader('Content-Type', 'application/pdf');

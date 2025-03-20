@@ -15,6 +15,7 @@ import { Caja } from 'src/cajas/entities/caja.entity';
 import { cajaReport } from './documents/reportCaja.report';
 import { Pedido } from 'src/pedidos/entities/pedido.entity';
 import { ReciboPedido } from './documents/bill.reportPedido.report';
+import { ReciboPedidoVenta } from './documents/bill.reportVenta.report';
 
 @Injectable()
 export class ReportesService {
@@ -38,11 +39,11 @@ export class ReportesService {
       where: { id },
       relations: ['usuario'],
     });
-  
+
     if (!caja) {
       throw new Error('No se encontró la caja');
     }
-  
+
     // Obtener las ventas asociadas a la caja
     const ventas = await this.ventasRepository.find({
       where: { caja: { id } },
@@ -50,20 +51,24 @@ export class ReportesService {
     });
 
     const gastos = await this.gastoRepository.find({
-      where: { caja: { id }},
+      where: { caja: { id } },
       relations: ['usuario', 'categoria'],
     });
-  
+
     // Pasar caja y ventas a cajaReport
     const docDefinition = cajaReport(caja, ventas, gastos);
-  
+
     return this.printer.createPdf(docDefinition);
   }
 
-  async obtenerPdfPedido(id: string): Promise<PDFKit.PDFDocument> {
+  async obtenerPdfPedido(id: string, tipo: string): Promise<PDFKit.PDFDocument> {
     // Buscar el pedido con las relaciones necesarias
+    const whereCondition = tipo === 'pedido'
+      ? { id: id }
+      : { venta: { id: id } };
+
     const pedido = await this.pedidoRepository.findOne({
-      where: { id },
+      where: whereCondition,
       relations: ['usuario', 'detalles', 'detalles.producto', 'almacen'],
     });
 
@@ -75,13 +80,34 @@ export class ReportesService {
     const docDefinition = ReciboPedido(pedido);
 
     // Crear el archivo PDF usando el servicio Printer (si lo tienes)
-    const pdfDoc = this.printer.createPdf(docDefinition); 
+    const pdfDoc = this.printer.createPdf(docDefinition);
+
+    // Retornar el documento PDF
+    return pdfDoc;
+  }
+  async obtenerPdfVenta2(id: string): Promise<PDFKit.PDFDocument> {
+
+    const pedido = await this.ventasRepository.findOne({
+      where: { id },
+      relations: ['vendedor','cliente', 'detalles', 'detalles.producto', 'almacen'],
+    });
+
+    if (!pedido) {
+      throw new Error('No se encontró el pedido');
+    }
+
+    // Generar el contenido del PDF con los datos del pedido
+    const docDefinition = ReciboPedidoVenta(pedido);
+
+    // Crear el archivo PDF usando el servicio Printer (si lo tienes)
+    const pdfDoc = this.printer.createPdf(docDefinition);
 
     // Retornar el documento PDF
     return pdfDoc;
   }
 
-  
+
+
   //MODIFICADO
 
   async obtenerPdfVentas(): Promise<PDFKit.PDFDocument> {
@@ -127,7 +153,7 @@ export class ReportesService {
             relations: ['detalles', 'detalles.producto', 'almacen', 'cliente', 'vendedor', 'caja'],
           }),
           this.gastoRepository.find({
-            relations: ['usuario', 'categoria', 'caja','almacen'],
+            relations: ['usuario', 'categoria', 'caja', 'almacen'],
           })
         ]);
 
@@ -184,7 +210,7 @@ export class ReportesService {
         }),
         this.gastoRepository.find({
           where: whereGastos,
-          relations: ['usuario', 'categoria', 'caja','almacen'],
+          relations: ['usuario', 'categoria', 'caja', 'almacen'],
         })
       ]);
 
