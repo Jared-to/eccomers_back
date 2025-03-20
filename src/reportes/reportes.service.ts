@@ -11,6 +11,10 @@ import { Venta } from 'src/ventas/entities/venta.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
 import { Gasto } from 'src/gastos/entities/gasto.entity';
+import { Caja } from 'src/cajas/entities/caja.entity';
+import { cajaReport } from './documents/reportCaja.report';
+import { Pedido } from 'src/pedidos/entities/pedido.entity';
+import { ReciboPedido } from './documents/bill.reportPedido.report';
 
 @Injectable()
 export class ReportesService {
@@ -22,7 +26,63 @@ export class ReportesService {
     private readonly ventasRepository: Repository<Venta>,
     @InjectRepository(Gasto)
     private readonly gastoRepository: Repository<Gasto>,
+    @InjectRepository(Caja)
+    private readonly cajaRepository: Repository<Caja>,
+    @InjectRepository(Pedido)
+    private readonly pedidoRepository: Repository<Pedido>,
   ) { }
+
+  //Codigo Modificado
+  async obtenerPdfCaja(id: string): Promise<PDFKit.PDFDocument> {
+    const caja = await this.cajaRepository.findOne({
+      where: { id },
+      relations: ['usuario'],
+    });
+  
+    if (!caja) {
+      throw new Error('No se encontró la caja');
+    }
+  
+    // Obtener las ventas asociadas a la caja
+    const ventas = await this.ventasRepository.find({
+      where: { caja: { id } },
+      relations: ['vendedor'], // Agrega las relaciones necesarias
+    });
+
+    const gastos = await this.gastoRepository.find({
+      where: { caja: { id }},
+      relations: ['usuario', 'categoria'],
+    });
+  
+    // Pasar caja y ventas a cajaReport
+    const docDefinition = cajaReport(caja, ventas, gastos);
+  
+    return this.printer.createPdf(docDefinition);
+  }
+
+  async obtenerPdfPedido(id: string): Promise<PDFKit.PDFDocument> {
+    // Buscar el pedido con las relaciones necesarias
+    const pedido = await this.pedidoRepository.findOne({
+      where: { id },
+      relations: ['usuario', 'detalles', 'detalles.producto', 'almacen'],
+    });
+
+    if (!pedido) {
+      throw new Error('No se encontró el pedido');
+    }
+
+    // Generar el contenido del PDF con los datos del pedido
+    const docDefinition = ReciboPedido(pedido);
+
+    // Crear el archivo PDF usando el servicio Printer (si lo tienes)
+    const pdfDoc = this.printer.createPdf(docDefinition); 
+
+    // Retornar el documento PDF
+    return pdfDoc;
+  }
+
+  
+  //MODIFICADO
 
   async obtenerPdfVentas(): Promise<PDFKit.PDFDocument> {
     const docDefinition = billReports();

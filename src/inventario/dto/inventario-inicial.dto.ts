@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { IsArray, IsDecimal, IsInt, IsNotEmpty, IsString, Min, ValidateNested } from "class-validator";
+import { IsArray, IsDecimal, IsInt, IsNotEmpty, IsNumber, IsString, Min, ValidateNested } from "class-validator";
 
 export class InventarioInicialDto {
   @IsString()

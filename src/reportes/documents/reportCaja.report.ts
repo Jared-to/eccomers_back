@@ -1,7 +1,7 @@
 import type { Content, StyleDictionary, TDocumentDefinitions } from 'pdfmake/interfaces';
+import { Caja } from 'src/cajas/entities/caja.entity';
+import { Gasto } from 'src/gastos/entities/gasto.entity';
 import { Venta } from 'src/ventas/entities/venta.entity';
-import { Formatter } from '../helpers/formatter';
-import { Cliente } from 'src/clientes/entities/cliente.entity';
 
 const formatDate = (value: string | Date): string => {
   const date = new Date(value);
@@ -24,8 +24,8 @@ const styles: StyleDictionary = {
     fontSize: 16,
     color: '#2980B9',
     bold: true,
-    margin: [0, 10],
-    alignment: 'center',
+    margin: [0, 5],
+    alignment: 'left',
   },
   tableHeader: {
     bold: true,
@@ -38,47 +38,155 @@ const styles: StyleDictionary = {
     fontSize: 10,
     alignment: 'center',
   },
+  totalRow: 
+  { 
+    bold: true, 
+    fontSize: 10, 
+    fillColor: '#568cc1', 
+    color: 'white', 
+    alignment: 'right' 
+  },
+  footer: { 
+    fontSize: 8, 
+    color: '#7F8C8D', 
+    alignment: 'center', 
+    margin: [0, 10] 
+  },
+  pageNumber: { 
+    fontSize: 8, 
+    color: '#7F8C8D', 
+    alignment: 'center' 
+  },
 };
 
-export const reportClients = (clientes: Cliente[]): TDocumentDefinitions => {
-  const tableData = clientes.map((detalle, index) => [
-    index + 1,
-    detalle.codigo,
-    detalle.nombre || 'Sin código',
-    detalle.apellido || 'Producto desconocido',
-    detalle.direccion,
-    detalle.telefono,
-  ]);
-
+export const cajaReport = (caja: Caja, ventas: Venta[], gastos: Gasto[]): TDocumentDefinitions => {
+  const totalEfectivo = caja.ventas_Efectivo + caja.gastos_efectivo;
+  const totalQR = caja.ventas_QR + caja.gastos_QR;
   return {
-    defaultStyle: {},
     pageSize: 'A4',
-    header: {
-      text: 'Reporte de Clientes',
-      style: 'header',
-    },
+    header: [
+      { columns: [{ text: 'Reporte de Caja', style: 'header', alignment: 'center' }] },
+    ],
+    footer: (currentPage, pageCount) => ({
+      text: `Página ${currentPage} de ${pageCount}`,
+      style: 'pageNumber',
+    }),
     content: [
+      { text: 'Información de la Caja', style: 'subHeader' },
       {
-        text: `Fecha: ${formatDate(new Date())}`,
-        style: 'subHeader',
+        columns: [
+          {
+            text: [
+              { text: `Código de Caja: ${caja.codigo}\n`, style: 'bodyText' },
+              { text: `Usuario: ${caja.usuario?.fullName || 'No disponible'}\n`, style: 'bodyText' },
+              { text: `Fecha de Apertura: ${formatDate(caja.fecha_apertura)}\n`, style: 'bodyText' },
+            ],
+          },
+          {
+            text: [
+              { text: `Fecha de Cierre: ${formatDate(caja.fecha_cierre)}\n`, style: 'bodyText' },
+              { text: `Saldo de Apertura: ${caja.saldo_apertura.toFixed(2)} Bs.\n`, style: 'bodyText' },
+            ],
+            alignment: 'right',
+          },
+        ],
       },
+      { text: 'Resumen de Movimientos', style: 'subHeader' },
       {
         layout: 'lightHorizontalLines',
         table: {
-          widths: ['auto', 'auto', '*', 'auto', 'auto', 'auto'],
+          widths: ['auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto'],
           headerRows: 1,
           body: [
-            // Header row
             [
-              { text: 'No.', style: 'tableHeader' },
-              { text: 'Codigo', style: 'tableHeader' },
-              { text: 'Nombre', style: 'tableHeader' },
-              { text: 'Apellido', style: 'tableHeader' },
-              { text: 'Direccion', style: 'tableHeader' },
-              { text: 'Telefono', style: 'tableHeader' },
+              { text: 'Ventas QR', style: 'tableHeader' },
+              { text: 'Gastos QR', style: 'tableHeader' },
+              { text: 'Ventas Efectivo', style: 'tableHeader' },
+              { text: 'Gastos Efectivo', style: 'tableHeader' },
+              { text: 'Total Ingresos QR', style: 'tableHeader' },
+              { text: 'Total Salidas QR', style: 'tableHeader' },
+              { text: 'Saldo Cierre QR', style: 'tableHeader' },
+              { text: 'Saldo Cierre Efectivo', style: 'tableHeader' },
             ],
-            // Data rows
-            ...tableData,
+            [
+              { text: `${caja.ventas_QR.toFixed(2)} Bs.`, style: 'tableRow' },
+              { text: `${caja.gastos_QR.toFixed(2)} Bs.`, style: 'tableRow' },
+              { text: `${caja.ventas_Efectivo.toFixed(2)} Bs.`, style: 'tableRow' },
+              { text: `${caja.gastos_efectivo.toFixed(2)} Bs.`, style: 'tableRow' },
+              { text: `${(caja.ventas_QR - caja.gastos_QR).toFixed(2)} Bs.`, style: 'tableRow' },
+              { text: `${(caja.ventas_Efectivo - caja.gastos_efectivo).toFixed(2)} Bs.`, style: 'tableRow' },
+              { text: `${caja.saldo_cierre_QR.toFixed(2)} Bs.`, style: 'tableRow' },
+              { text: `${caja.saldo_cierre_efectivo.toFixed(2)} Bs.`, style: 'tableRow' },
+            ],
+            [
+              { text: 'Total en Efectivo:', colSpan: 7, alignment: 'right', style: 'totalRow' },
+              {}, {}, {}, {}, {}, {},
+              { text: `${totalEfectivo.toFixed(2)} Bs.`, style: 'totalRow' },
+            ],
+            [
+              { text: `Total Movimientos QR:`, colSpan: 7, alignment: 'right', style: 'totalRow'  },
+              {}, {}, {}, {}, {}, {},
+              { text: `${totalQR.toFixed(2)} Bs.`, style: 'totalRow' },
+            ],
+            [
+              { text: 'Saldo Cierre Neto', colSpan: 7, alignment: 'right', style: 'totalRow' },
+              {}, {}, {}, {}, {}, {},
+              { text: `${caja.saldo_cierre_neto.toFixed(2)} Bs.`, style: 'totalRow' },
+            ],
+          ],
+        },
+      },
+      { text: 'Ventas Registradas', style: 'subHeader'},
+      {
+        layout: 'lightHorizontalLines',
+        table: {
+          widths: ['auto', 'auto', 'auto', 'auto', 'auto', 'auto'],
+          headerRows: 1,
+          body: [
+            [
+              { text: 'Código', style: 'tableHeader' },
+              { text: 'Fecha', style: 'tableHeader' },
+              { text: 'Vendedor', style: 'tableHeader' },
+              { text: 'Tipo de Pago', style: 'tableHeader' },
+              { text: 'Descuento', style: 'tableHeader' },
+              { text: 'Total', style: 'tableHeader' },
+            ],
+            ...ventas.map(venta => [
+              { text: venta.codigo, style: 'tableRow' },
+              { text: formatDate(venta.fecha), style: 'tableRow' },
+              { text: venta.vendedor?.fullName || 'No disponible', style: 'tableRow' },
+              { text: venta.tipo_pago, style: 'tableRow' },
+              { text: `${venta.descuento.toFixed(2)}`, style: 'tableRow' },
+              { text: `${venta.total.toFixed(2)} Bs.`, style: 'tableRow' },
+            ]),
+          ],
+        },
+      },
+      { text: 'Resumen de Gastos', style: 'subHeader' },
+      {
+        layout: 'lightHorizontalLines',
+        table: {
+          widths: ['auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto'],
+          headerRows: 1,
+          body: [
+            [
+              { text: 'Código', style: 'tableHeader' },
+              { text: 'Fecha', style: 'tableHeader' },
+              { text: 'Usuario', style: 'tableHeader' },
+              { text: 'Tipo', style: 'tableHeader' },
+              { text: 'Categoría', style: 'tableHeader' },
+              { text: 'Tipo Pago', style: 'tableHeader' },
+              { text: 'Monto', style: 'tableHeader', alignment: 'right' },
+            ],
+            ...gastos.map(gasto => [
+              { text: gasto.codigo || 'N/A', style: 'tableRow' },
+              { text: formatDate(gasto.fecha), style: 'tableRow' },
+              { text: gasto.usuario?.fullName || 'N/A', style: 'tableRow' },
+              { text: gasto.tipo, style: 'tableRow' },
+              { text: gasto.categoria?.nombre || 'N/A', style: 'tableRow' },
+              { text: gasto.tipo_pago, style: 'tableRow' },
+              { text: `${gasto.monto.toFixed(2)} Bs.`, style: 'tableRow', alignment: 'right' },
+            ]),
           ],
         },
       },

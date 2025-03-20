@@ -85,7 +85,7 @@ export const billReport = (venta: Venta): TDocumentDefinitions => {
       {
         columns: [
           {
-            text: 'Reporte de Venta',
+            text: 'BlessBurguer',
             style: 'header',
             alignment: 'center',
           },
@@ -110,13 +110,13 @@ export const billReport = (venta: Venta): TDocumentDefinitions => {
               { text: `Cliente: ${venta.cliente?.nombre || 'Cliente desconocido'}\n`, style: 'bodyText' },
               { text: `Dirección: ${venta.cliente?.direccion || 'Dirección desconocida'}\n`, style: 'bodyText' },
               { text: `Código de Venta: ${venta.codigo}\n`, style: 'bodyText' },
-              { text: `Fecha de Venta: ${formatDate(venta.fecha)}\n`, style: 'bodyText' },
             ],
           },
           {
             text: [
               { text: `Factura No.: ${venta.codigo}\n`, style: 'bodyText' },
               { text: `Modalidad: ${venta.tipo_pago}\n`, style: 'bodyText' },
+              { text: `Fecha de Venta: ${formatDate(venta.fecha)}\n`, style: 'bodyText' },
             ],
             alignment: 'right',
           },

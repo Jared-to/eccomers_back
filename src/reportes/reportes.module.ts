@@ -6,6 +6,8 @@ import { VentasModule } from 'src/ventas/ventas.module';
 import { ClientesModule } from 'src/clientes/clientes.module';
 import { GastosModule } from 'src/gastos/gastos.module';
 import { AuthModule } from 'src/auth/auth.module';
+import { CajasModule } from 'src/cajas/cajas.module';
+import { PedidosModule } from 'src/pedidos/pedidos.module';
 
 @Module({
   controllers: [ReportesController],
@@ -14,7 +16,9 @@ import { AuthModule } from 'src/auth/auth.module';
     VentasModule,
     ClientesModule,
     GastosModule,
-    AuthModule
+    AuthModule,
+    CajasModule,
+    PedidosModule,
   ]
 })
 export class ReportesModule {}

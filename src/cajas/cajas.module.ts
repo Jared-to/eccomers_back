@@ -16,6 +16,6 @@ import { GastosModule } from 'src/gastos/gastos.module';
   ],
   controllers: [CajasController],
   providers: [CajasService],
-  exports:[CajasService]
+  exports:[CajasService, TypeOrmModule]
 })
 export class CajasModule {}
