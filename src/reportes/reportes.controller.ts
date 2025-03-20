@@ -72,4 +72,35 @@ export class ReportesController {
 
     return this.reportesService.reporteVentasGastos(fechaInicio, fechaFin, almacen, usuario);
   }
+
+  //MODIFICADO
+  @Get('caja/:id')
+  async obtenerPdfCaja(@Param('id') id: string, @Res() response: Response) {
+    const pdfDoc = await this.reportesService.obtenerPdfCaja(id);
+
+    response.setHeader('Content-Type', 'application/pdf');
+    response.setHeader('Content-Disposition', `attachment; filename="Reporte-Caja-${id}.pdf"`);
+    pdfDoc.info.Title = `Reporte Caja ${id}`;
+    pdfDoc.pipe(response);
+    pdfDoc.end();
+  }
+  @Get('pedido/:id')
+  async obtenerPdfPedido(@Param('id') id: string, @Res() response: Response) {
+    // Llamar al servicio para obtener el documento PDF
+    const pdfDoc = await this.reportesService.obtenerPdfPedido(id);
+
+    // Configurar los encabezados de la respuesta
+    response.setHeader('Content-Type', 'application/pdf');
+    response.setHeader(
+      'Content-Disposition',
+      `attachment; filename="Reporte-Pedido-${id}.pdf"`, // El nombre del archivo PDF será "Reporte-Pedido-{id}.pdf"
+    );
+
+    // Asignar el título al documento PDF
+    pdfDoc.info.Title = `Recibo Pedido ${id}`;
+
+    // Enviar el documento PDF como respuesta
+    pdfDoc.pipe(response);
+    pdfDoc.end();
+  }
 }

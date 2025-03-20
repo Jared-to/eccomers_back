@@ -129,7 +129,7 @@ export const billReports = (venta = ventaEjemplo): TDocumentDefinitions => {
     },
     content: [
       {
-        text: 'Información de la Venta',
+        text: 'BlessBurger',//'Información de la Venta',
         style: 'subHeader',
         margin: [0, 10, 0, 5], // Separación superior e inferior
       },
@@ -154,12 +154,12 @@ export const billReports = (venta = ventaEjemplo): TDocumentDefinitions => {
           },
         ],
       },
-      {
-        qr: venta.codigo,
-        fit: 50,
-        alignment: 'right',
-        margin: [0, 10], // Espacio después del QR
-      },
+      // {
+      //   qr: venta.codigo,
+      //   fit: 50,
+      //   alignment: 'right',
+      //   margin: [0, 10], // Espacio después del QR
+      // },
       {
         text: 'Detalles de los productos',
         style: 'subHeader',
