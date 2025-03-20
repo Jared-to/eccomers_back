@@ -14,6 +14,6 @@ export class VarianteProducto {
   @Column('decimal', { precision: 10, scale: 2 })
   precio: string;
 
-  @ManyToOne(() => Producto, (producto) => producto.variantes)
+  @ManyToOne(() => Producto, (producto) => producto.variantes, { onDelete: 'CASCADE' })
   producto: Producto;
 }

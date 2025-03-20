@@ -14,7 +14,7 @@ export class Pedido {
   @Column({ type: 'int', generated: 'increment', unique: true })
   increment: number;
 
-  @Column({ type: 'text', unique: true,nullable:true})
+  @Column({ type: 'text', unique: true, nullable: true })
   codigo: string;
 
   @Column('text', { nullable: true })
@@ -57,10 +57,13 @@ export class Pedido {
   @Column('float', { nullable: true })
   total: number;
 
+  @Column('float', { nullable: true })
+  delivery: number;
+
   @Column('text', { nullable: true })
   fotoRecibo: string;
 
-  @Column({ type: 'enum', enum: ['Solicitado', 'Aceptado','Vendido', 'Rechazado', 'Cancelado'], default: 'Solicitado' })
+  @Column({ type: 'enum', enum: ['Solicitado', 'Aceptado', 'Vendido', 'Rechazado', 'Cancelado'], default: 'Solicitado' })
   estado: string;
 
   @Column({ type: 'boolean', default: false })
@@ -74,7 +77,7 @@ export class Pedido {
   @JoinColumn({ name: 'almacen_id' })
   almacen: Almacen;
 
-  @ManyToOne(() => Venta, { eager: false })
+  @ManyToOne(() => Venta, { eager: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'venta_id' })
   venta: Venta;
 

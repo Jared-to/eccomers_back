@@ -42,6 +42,10 @@ export class CreatePedidoDto {
   @IsNumber()
   total?: number;
 
+  @IsOptional()
+  @IsNumber()
+  delivery?: number;
+
 
   @IsUUID()
   sucursal: string
