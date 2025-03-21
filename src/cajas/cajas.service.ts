@@ -2,12 +2,14 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { DataSource } from 'typeorm';
+import * as moment from 'moment-timezone';
 
 import { Caja } from './entities/caja.entity';
 import { Gasto } from 'src/gastos/entities/gasto.entity';
 import { Venta } from 'src/ventas/entities/venta.entity';
 import { CajaApertura } from './interface/cajaApertura.interface';
 import { VentasService } from 'src/ventas/ventas.service';
+
 @Injectable()
 export class CajasService {
   constructor(
@@ -29,7 +31,7 @@ export class CajasService {
 
     const nuevaCaja = this.cajaRepository.create({
       usuario: { id: usuarioId },
-      fecha_apertura: new Date(),
+      fecha_apertura: moment().tz("America/La_Paz").format("YYYY-MM-DD HH:mm:ss"),
       fecha_cierre: null,
       saldo_apertura: saldoApertura,
       ventas_QR: 0,
@@ -125,7 +127,7 @@ export class CajasService {
     const totalGastosEfectivo = gastos.filter(g => g.tipo_pago === 'EFECTIVO').reduce((sum, gasto) => sum + gasto.monto, 0);
 
     // Actualizar los valores de la caja
-    caja.fecha_cierre = new Date();
+    caja.fecha_cierre = moment().tz("America/La_Paz").format("YYYY-MM-DD HH:mm:ss");
     caja.ventas_QR = totalVentasQR;
     caja.ventas_Efectivo = totalVentasEfectivo;
     caja.gastos_QR = totalGastosQR;

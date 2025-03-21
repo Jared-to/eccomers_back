@@ -11,6 +11,7 @@ import { DetallePedido } from './entities/productosPedido.entity';
 import { CreateVentaDto } from 'src/ventas/dto/create-venta.dto';
 import { ClientesService } from 'src/clientes/clientes.service';
 import { VentasService } from 'src/ventas/ventas.service';
+import * as moment from 'moment-timezone';
 
 @Injectable()
 export class PedidosService {
@@ -32,7 +33,7 @@ export class PedidosService {
     const pedido = await this.pedidoRepository.create({
       ...createPedidoDto,
       dir_gps: direccionGps,
-      fechaPedido: new Date(),
+      fechaPedido: moment().tz("America/La_Paz").format("YYYY-MM-DD HH:mm:ss"),
       almacen: { id: createPedidoDto.sucursal }
     })
     if (file) {

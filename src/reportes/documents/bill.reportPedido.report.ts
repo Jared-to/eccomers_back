@@ -18,8 +18,8 @@ const styles: StyleDictionary = {
   bodyText: { fontSize: 8, margin: [0, 1] },
   boldText: { fontSize: 8, bold: true },
   highlightText: { fontSize: 9, bold: true },
-  tableHeader: { bold: true, fontSize: 7, alignment: 'center' },
-  tableRow: { fontSize: 7, alignment: 'center' },
+  tableHeader: { bold: true, fontSize: 6, alignment: 'center' },
+  tableRow: { fontSize: 6, alignment: 'center' },
   totalRow: { bold: true, fontSize: 7, alignment: 'right' },
   footer: { fontSize: 8, alignment: 'center', margin: [0, 3] },
 };
@@ -34,6 +34,7 @@ export const ReciboPedido = (pedido: Pedido): TDocumentDefinitions => {
     Precio: detalle.precio,
     Cantidad: detalle.cantidad,
     Total: detalle.subtotal,
+    variante: detalle.variante
   }));
 
   // Función para generar contenido del recibo
@@ -52,14 +53,14 @@ export const ReciboPedido = (pedido: Pedido): TDocumentDefinitions => {
           stack: [
             { text: `Cliente: ${pedido.nombreSolicitante || 'Cliente desconocido'}`, style: 'bodyText' },
             { text: `Fecha: ${formatDate(pedido.fechaPedido)}`, style: 'bodyText' },
-            { text: `Forma de Entrega: ${pedido.formaEntrega}`, style: 'bodyText' },
+            { text: `Entrega: ${pedido.formaEntrega}`, style: 'bodyText' },
           ],
           margin: [0, 0, 0, 2],
         },
         {
           width: '30%',
           stack: [
-            { text: `Orden No.: ${pedido.codigo}`, style: 'highlightText', alignment: 'left', margin: [-10, 0, 0, 0] },
+            { text: `Orden: ${pedido.codigo}`, style: 'highlightText', alignment: 'left', margin: [-10, 0, 0, 0] },
             { text: `Pago: ${pedido.metodoPago}`, style: 'bodyText', alignment: 'left', margin: [-10, 0, 0, 0] },
           ],
           margin: [0, 0, 0, 2],
@@ -80,15 +81,16 @@ export const ReciboPedido = (pedido: Pedido): TDocumentDefinitions => {
             { text: 'Total', style: 'tableHeader' },
           ],
           ...pedidoProductos.map((product) => [
-            { text: product.Producto, style: 'tableRow', alignment: 'left' },
-            { text: `${product.Precio.toFixed(2)} Bs.`, style: 'tableRow', alignment: 'center' },
+            { text: product.Producto + '-' + product.variante, style: 'tableRow', alignment: 'left' },
+            { text: `${product.Precio.toFixed(2)}`, style: 'tableRow', alignment: 'center' },
             { text: product.Cantidad.toString(), style: 'tableRow', alignment: 'center' },
             { text: `${product.Total.toFixed(2)} Bs.`, style: 'tableRow', alignment: 'right' },
           ]),
           [
-            { text: 'Total Neto', colSpan: 3, alignment: 'right', style: 'totalRow' },
-            {}, {},
-            { text: `${pedido.total.toFixed(2)} Bs.`, style: 'totalRow' },
+            { text: 'Total ', colSpan: 2, alignment: 'right', style: 'totalRow' },
+            {}, // Celda vacía para completar el colSpan
+            { text: `${pedido.total.toFixed(2)} Bs.`, colSpan: 2, alignment: 'right', style: 'totalRow' },
+            {}
           ],
         ],
       },
@@ -98,8 +100,8 @@ export const ReciboPedido = (pedido: Pedido): TDocumentDefinitions => {
   ];
 
   return {
-    defaultStyle: { fontSize: 8, margin: [0, 2] },
-    pageSize: { width: 250, height: 210 },
+    defaultStyle: { fontSize: 7, margin: [0, 2] },
+    pageSize: { width: 195, height: 'auto' },
     pageMargins: [10, 10, 10, 10],
     content: [
       ...ReciboPedido('BlessBurguer'),

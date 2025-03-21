@@ -6,6 +6,7 @@ import { MovimientoInventarioDto } from '../dto/movimiento-inv.dto';
 import { ProductosService } from 'src/productos/productos.service';
 import { AlmacenesService } from 'src/almacenes/almacenes.service';
 import { Almacen } from 'src/almacenes/entities/almacen.entity';
+import * as moment from 'moment-timezone';
 
 @Injectable()
 export class MovimientosAlmacenService {
@@ -19,7 +20,7 @@ export class MovimientosAlmacenService {
   async registrarIngreso(movimientoInventarioDto: MovimientoInventarioDto): Promise<MovimientoInventario> {
 
     const { almacenId, cantidad, productoId, descripcion } = movimientoInventarioDto;
-    const fechaUTC = new Date()
+    const fechaUTC = moment().tz("America/La_Paz").format("YYYY-MM-DD HH:mm:ss");
     const almacen = await this.almacenService.findOne(almacenId);
     const movimiento = this.movimientoRepository.create({
       almacen: almacen,
@@ -39,7 +40,7 @@ export class MovimientosAlmacenService {
   ): Promise<MovimientoInventario> {
 
     const { almacenId, cantidad, productoId, descripcion } = movimientoInventarioDto;
-    const fechaUTC = new Date();
+    const fechaUTC = moment().tz("America/La_Paz").format("YYYY-MM-DD HH:mm:ss");
 
     // Busca el almacén usando el QueryRunner
     const almacen = await queryRunner.manager.findOne(Almacen, { where: { id: almacenId } });
@@ -65,7 +66,7 @@ export class MovimientosAlmacenService {
   async registrarSalida(movimientoInventarioDto: MovimientoInventarioDto): Promise<MovimientoInventario> {
 
     const { almacenId, cantidad, productoId, descripcion } = movimientoInventarioDto;
-    const fechaLocal = new Date();
+    const fechaUTC = moment().tz("America/La_Paz").format("YYYY-MM-DD HH:mm:ss");
 
     const movimiento = this.movimientoRepository.create({
       almacen: { id: almacenId },
@@ -73,7 +74,7 @@ export class MovimientosAlmacenService {
       tipo: 'salida',
       cantidad,
       descripcion,
-      fecha: fechaLocal,
+      fecha: fechaUTC,
     });
 
     return this.movimientoRepository.save(movimiento);
@@ -86,7 +87,7 @@ export class MovimientosAlmacenService {
   ): Promise<MovimientoInventario> {
 
     const { almacenId, cantidad, productoId, descripcion } = movimientoInventarioDto;
-    const fechaLocal = new Date();
+    const fechaLocal = moment().tz("America/La_Paz").format("YYYY-MM-DD HH:mm:ss");
 
     const movimiento = queryRunner.manager.create(MovimientoInventario, {
       almacen: { id: almacenId },

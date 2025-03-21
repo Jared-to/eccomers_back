@@ -9,8 +9,8 @@ import { MovimientosAlmacenService } from 'src/inventario/service/movimientos-al
 import { UpdateVentaDto } from './dto/update-venta.dto';
 import { Cliente } from 'src/clientes/entities/cliente.entity';
 import { Producto } from 'src/productos/entities/producto.entity';
-import { Almacen } from 'src/almacenes/entities/almacen.entity';
-import { CajasService } from 'src/cajas/cajas.service';
+import * as moment from 'moment-timezone';
+
 import { AuthService } from 'src/auth/auth.service';
 import { Cobros } from './entities/cobros.entity';
 import { User } from 'src/auth/entities/user.entity';
@@ -48,7 +48,7 @@ export class VentasService {
       // Crear y guardar la venta
       const venta = this.ventasRepository.create({
         ...ventaData,
-        fecha: new Date(),
+        fecha: moment().tz("America/La_Paz").format("YYYY-MM-DD HH:mm:ss"),
         vendedor: { id: ventaData.vendedor },
         caja: { id: ventaData.cajaId },
         cliente: { id: ventaData.cliente },

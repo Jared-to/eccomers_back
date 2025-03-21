@@ -23,7 +23,7 @@ export class Caja {
   fecha_apertura: Date;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', nullable: true })
-  fecha_cierre: Date;
+  fecha_cierre: any;
 
   @Column('float')
   saldo_apertura: number;

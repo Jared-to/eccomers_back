@@ -12,6 +12,7 @@ import { AlmacenesService } from 'src/almacenes/almacenes.service';
 import { Producto } from 'src/productos/entities/producto.entity';
 import { Almacen } from 'src/almacenes/entities/almacen.entity';
 import { CategoriasService } from 'src/categorias/categorias.service';
+import * as moment from 'moment-timezone';
 
 @Injectable()
 export class InventarioService {
@@ -41,7 +42,7 @@ export class InventarioService {
         const registroInicial = this.inventarioInicialRepository.create({
           almacen_id,
           cantidad,
-          fecha: new Date().toISOString(),
+          fecha: moment().tz("America/La_Paz").format("YYYY-MM-DD HH:mm:ss"),
           precio_compra,
           producto_id,
         });
