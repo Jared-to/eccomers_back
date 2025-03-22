@@ -104,6 +104,8 @@ export class ProductosService {
         // cargar nuevas imagenes
         const uploadPromises = await this.cloudinaryService.uploadFile(file);
         finalImage = uploadPromises.secure_url;
+
+        producto.imagen = finalImage;
       }
 
       // Actualizar los datos básicos del producto

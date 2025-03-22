@@ -1,17 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreatePedidoDto } from './dto/create-pedido.dto';
-import { UpdatePedidoDto } from './dto/update-pedido.dto';
 import { In, Repository } from 'typeorm';
 import { Pedido } from './entities/pedido.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
-import { User } from 'src/auth/entities/user.entity';
 import { AuthService } from 'src/auth/auth.service';
 import { DetallePedido } from './entities/productosPedido.entity';
 import { CreateVentaDto } from 'src/ventas/dto/create-venta.dto';
 import { ClientesService } from 'src/clientes/clientes.service';
 import { VentasService } from 'src/ventas/ventas.service';
 import * as moment from 'moment-timezone';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class PedidosService {
@@ -24,7 +23,7 @@ export class PedidosService {
     private readonly authService: AuthService,
     private readonly clientesService: ClientesService,
     private readonly ventasService: VentasService,
-
+    private readonly eventEmitter: EventEmitter2,
   ) { }
   async solicitudPedido(createPedidoDto: CreatePedidoDto, file?: Express.Multer.File) {
     const direccionGps = createPedidoDto.dir_gps ? JSON.parse(createPedidoDto.dir_gps) : null;
@@ -57,8 +56,13 @@ export class PedidosService {
       : 'PD00001';
 
     pedidoG.codigo = nuevoCodigo;
-    return await this.pedidoRepository.save(pedidoG)
 
+    await this.pedidoRepository.save(pedidoG)
+
+    // Emitir evento para actualizar la cantidad de pedidos pendientes
+    this.eventEmitter.emit('pedido.creado', pedidoG);
+
+    return pedidoG
   }
   async aceptarPedido(id: string, user: string) {
 
@@ -70,7 +74,12 @@ export class PedidosService {
     pedido.estado = 'Aceptado';
     pedido.usuario = userD;
 
-    return await this.pedidoRepository.save(pedido);
+
+    const pedidoG = await this.pedidoRepository.save(pedido);
+    // Emitir evento para actualizar la cantidad de pedidos pendientes
+    this.eventEmitter.emit('pedido.aceptado');
+
+    return pedidoG;
   }
   async rechazarPedido(id: string,) {
     const pedido = await this.pedidoRepository.findOne({
@@ -86,6 +95,8 @@ export class PedidosService {
     }
 
     await this.pedidoRepository.remove(pedido);
+
+    this.eventEmitter.emit('pedido.rechazado');
     return "Pedido eliminado con exito"
   }
   async cancelarPedido(id: string, user: string) {
