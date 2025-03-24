@@ -277,57 +277,112 @@ export class VentasService {
   }
 
 
-  async findAllDates(fechaInicio: string | 'xx', fechaFin: string | 'xx', user: User): Promise<Venta[]> {
+  // async findAllDates(fechaInicio: string | 'xx', fechaFin: string | 'xx', user: User): Promise<Venta[]> {
 
+  //   const isAdmin = user.roles.some(role => role === 'admin');
+  //   // Si ambas fechas son 'xx', obtenemos todas las ventas
+  //   if (fechaInicio === 'xx' && fechaFin === 'xx') {
+
+  //     return this.ventasRepository.find({
+  //       where: isAdmin ? {} : { vendedor: { id: user.id } },
+  //       relations: ['detalles', 'detalles.producto', 'almacen', 'cliente', 'vendedor', 'caja'],
+  //     });
+
+  //   }
+
+  //   // Normalizamos las fechas a medianoche para ignorar horas
+  //   const normalizeDate = (date: string) => {
+  //     const d = new Date(date);
+  //     d.setHours(0, 0, 0, 0); // Establecemos la hora a medianoche
+  //     return d;
+  //   };
+
+  //   const fechaInicioNormalizada = normalizeDate(fechaInicio);
+  //   const fechaFinNormalizada = normalizeDate(fechaFin);
+
+
+  //   // Si la fecha final es hoy, ajustamos para obtener hasta el final del día (23:59:59)
+  //   if (fechaFin === fechaInicio) {
+  //     fechaFinNormalizada.setHours(23, 59, 59, 999); // Fin del día (23:59:59)
+  //   }
+
+
+  //   const whereConditions: any = {};
+
+  //   if (!isAdmin) {
+  //     whereConditions.vendedor = { id: user.id };
+  //   }
+  //   // Filtrar por rango de fechas si ambas fechas son proporcionadas
+  //   if (fechaInicio && fechaFin) {
+  //     whereConditions.fecha = Between(fechaInicioNormalizada, fechaFinNormalizada);
+  //   } else if (fechaInicio) {
+  //     whereConditions.fecha = { $gte: fechaInicioNormalizada };
+  //   } else if (fechaFin) {
+  //     whereConditions.fecha = { $lte: fechaFinNormalizada };
+  //   }
+
+  //   const ventas = await this.ventasRepository.find({
+  //     where: whereConditions,
+  //     relations: ['detalles', 'detalles.producto', 'almacen', 'cliente', 'vendedor', 'caja'],
+  //   });
+  //   console.log("findAllDates "+fechaInicio);
+  //   console.log("findAllDates "+fechaFin);
+  //   console.log("ventas: "+ventas);
+
+  //   return ventas;
+  // }
+
+  //CODIGO MODIFICADO
+  async findAllDates(fechaInicio: string | 'xx', fechaFin: string | 'xx', user: User): Promise<Venta[]> {
     const isAdmin = user.roles.some(role => role === 'admin');
+
     // Si ambas fechas son 'xx', obtenemos todas las ventas
     if (fechaInicio === 'xx' && fechaFin === 'xx') {
-
-      return this.ventasRepository.find({
-        where: isAdmin ? {} : { vendedor: { id: user.id } },
-        relations: ['detalles', 'detalles.producto', 'almacen', 'cliente', 'vendedor', 'caja'],
-      });
-
+        return this.ventasRepository.find({
+            where: isAdmin ? {} : { vendedor: { id: user.id } },
+            relations: ['detalles', 'detalles.producto', 'almacen', 'cliente', 'vendedor', 'caja'],
+        });
     }
 
-    // Normalizamos las fechas a medianoche para ignorar horas
-    const normalizeDate = (date: string) => {
-      const d = new Date(date);
-      d.setHours(0, 0, 0, 0); // Establecemos la hora a medianoche
-      return d;
+    // Función para normalizar la fecha
+    const normalizeDate = (date: string): Date => {
+        const d = new Date(date);
+        if (isNaN(d.getTime())) throw new Error(`Fecha inválida: ${date}`);
+        d.setHours(0, 0, 0, 0);
+        return d;
     };
 
-    const fechaInicioNormalizada = normalizeDate(fechaInicio);
-    const fechaFinNormalizada = normalizeDate(fechaFin);
+    try {
+        const fechaInicioNormalizada = normalizeDate(fechaInicio);
+        const fechaFinNormalizada = normalizeDate(fechaFin);
 
+        // Ajustamos la fecha final al final del día
+        fechaFinNormalizada.setHours(23, 59, 59, 999);
 
-    // Si la fecha final es hoy, ajustamos para obtener hasta el final del día (23:59:59)
-    if (fechaFin === fechaInicio) {
-      fechaFinNormalizada.setHours(23, 59, 59, 999); // Fin del día (23:59:59)
+        const whereConditions: any = {
+            fecha: Between(fechaInicioNormalizada, fechaFinNormalizada),
+        };
+
+        if (!isAdmin) {
+            whereConditions.vendedor = { id: user.id };
+        }
+
+        const ventas = await this.ventasRepository.find({
+            where: whereConditions,
+            relations: ['detalles', 'detalles.producto', 'almacen', 'cliente', 'vendedor', 'caja'],
+        });
+
+        console.log("findAllDates - Fecha Inicio:", fechaInicioNormalizada);
+        console.log("findAllDates - Fecha Fin:", fechaFinNormalizada);
+        console.log("Ventas encontradas:", ventas.length);
+
+        return ventas;
+    } catch (error) {
+        console.error("Error en findAllDates:", error.message);
+        return [];
     }
-
-
-    const whereConditions: any = {};
-
-    if (!isAdmin) {
-      whereConditions.vendedor = { id: user.id };
-    }
-    // Filtrar por rango de fechas si ambas fechas son proporcionadas
-    if (fechaInicio && fechaFin) {
-      whereConditions.fecha = Between(fechaInicioNormalizada, fechaFinNormalizada);
-    } else if (fechaInicio) {
-      whereConditions.fecha = { $gte: fechaInicioNormalizada };
-    } else if (fechaFin) {
-      whereConditions.fecha = { $lte: fechaFinNormalizada };
-    }
-
-    const ventas = await this.ventasRepository.find({
-      where: whereConditions,
-      relations: ['detalles', 'detalles.producto', 'almacen', 'cliente', 'vendedor', 'caja'],
-    });
-
-    return ventas;
   }
+  //END CODIGO MODIFICADO
 
 
   async findOne(id: string): Promise<Venta> {

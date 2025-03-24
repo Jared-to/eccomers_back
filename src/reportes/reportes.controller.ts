@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Res, Query } from '@nestjs/common';
-import { ReportesService } from './reportes.service';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Res, Query, Req, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 import { ValidRoles } from 'src/auth/interface/valid-roles';
 import { Auth } from 'src/auth/decorators/auth.decorator';
+import { User } from 'src/auth/entities/user.entity';
+import { ReportesService } from './reportes.service';
 
 @Controller('reportes')
 export class ReportesController {
@@ -102,5 +103,58 @@ export class ReportesController {
     // Enviar el documento PDF como respuesta
     pdfDoc.pipe(response);
     pdfDoc.end();
+  }
+
+  @Get('gastos')
+  @Auth(ValidRoles.admin, ValidRoles.user)
+  async obtenerPdfGastos(
+    @Query('fechaInicio') fechaInicio: string,
+    @Query('fechaFin') fechaFin: string,
+    @Req() req,
+    @Res() response: Response,
+  ) {
+    
+    try {
+      const usuario: User = req.user; // Obtener el usuario autenticado
+      const pdfDoc = await this.reportesService.obtenerPdfGastos(fechaInicio, fechaFin, usuario);
+      
+      response.setHeader('Content-Type', 'application/pdf');
+      response.setHeader(
+        'Content-Disposition',
+        `attachment; filename="Reporte-Gastos-${fechaInicio}_to_${fechaFin}.pdf"`,
+      );
+      pdfDoc.info.Title = `Reporte de Gastos (${fechaInicio} - ${fechaFin})`;
+      pdfDoc.pipe(response);
+      pdfDoc.end();
+    } catch (error) {
+      response.status(500).json({ message: 'Error al generar el reporte', error });
+    }
+  }
+
+  // Reporte de ventas en un rango de fechas
+  @Get('ventasFecha')
+  @Auth(ValidRoles.admin, ValidRoles.user)
+  async obtenerPdfVentasFecha(
+    @Query('fechaInicio') fechaInicio: string,
+    @Query('fechaFin') fechaFin: string,
+    @Req() req,
+    @Res() response: Response,
+  ) {
+    try {
+      const usuario: User = req.user; // Obtener el usuario autenticado
+      // Llamamos al servicio de reportes para generar el PDF
+      const pdfDoc = await this.reportesService.reporteVentasPDF(fechaInicio, fechaFin, usuario);
+      
+      response.setHeader('Content-Type', 'application/pdf');
+      response.setHeader(
+        'Content-Disposition',
+        `attachment; filename="Reporte-Ventas-${fechaInicio}_to_${fechaFin}.pdf"`,
+      );
+      pdfDoc.info.Title = `Reporte de Ventas (${fechaInicio} - ${fechaFin})`;
+      pdfDoc.pipe(response);
+      pdfDoc.end();
+    } catch (error) {
+      response.status(500).json({ message: 'Error al generar el reporte de ventas', error });
+    }
   }
 }

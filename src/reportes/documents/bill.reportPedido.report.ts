@@ -99,7 +99,7 @@ export const ReciboPedido = (pedido: Pedido): TDocumentDefinitions => {
 
   return {
     defaultStyle: { fontSize: 8, margin: [0, 2] },
-    pageSize: { width: 250, height: 210 },
+    pageSize: { width: 220, height: 'auto' },
     pageMargins: [10, 10, 10, 10],
     content: [
       ...ReciboPedido('BlessBurguer'),
