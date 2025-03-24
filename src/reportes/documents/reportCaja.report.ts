@@ -156,7 +156,7 @@ export const cajaReport = (caja: Caja, ventas: Venta[], gastos: Gasto[]): TDocum
               { text: formatDate(venta.fecha), style: 'tableRow' },
               { text: venta.vendedor?.fullName || 'No disponible', style: 'tableRow' },
               { text: venta.tipo_pago, style: 'tableRow' },
-              { text: `${venta.descuento.toFixed(2)}`, style: 'tableRow' },
+              { text: `${(venta.subtotal - venta.total).toFixed(2)}`, style: 'tableRow' },
               { text: `${venta.total.toFixed(2)} Bs.`, style: 'tableRow' },
             ]),
           ],

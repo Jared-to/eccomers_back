@@ -195,8 +195,6 @@ export class ProductosService {
     return producto;
   }
 
-
-
   // Eliminar un producto
   async deleteProducto(id: string): Promise<Object> {
     try {

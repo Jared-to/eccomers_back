@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, Between, In } from 'typeorm';
 import { Venta } from './entities/venta.entity';
@@ -12,9 +12,10 @@ import { Producto } from 'src/productos/entities/producto.entity';
 import * as moment from 'moment-timezone';
 
 import { AuthService } from 'src/auth/auth.service';
-import { Cobros } from './entities/cobros.entity';
 import { User } from 'src/auth/entities/user.entity';
 import { VarianteProducto } from 'src/productos/entities/varianteProducto.entity';
+import { DescuentosService } from 'src/descuentos/descuentos.service';
+import { ClientesService } from 'src/clientes/clientes.service';
 
 @Injectable()
 export class VentasService {
@@ -27,11 +28,11 @@ export class VentasService {
     private readonly productoRepository: Repository<Producto>,
     @InjectRepository(VarianteProducto)
     private readonly varianteRepository: Repository<VarianteProducto>,
-    @InjectRepository(Cobros)
-    private readonly cobrosRepository: Repository<Cobros>,
     private readonly inventarioService: InventarioService,
     private readonly movimientosService: MovimientosAlmacenService,
-    private readonly authService: AuthService,
+    private readonly descuentosService: DescuentosService,
+    @Inject(forwardRef(() => ClientesService))
+    private readonly clientesService: ClientesService,
     private readonly dataSource: DataSource,
 
   ) { }
@@ -43,16 +44,38 @@ export class VentasService {
     await queryRunner.startTransaction();
 
     try {
-      const { detalles, ventaAlContado, ...ventaData } = createVentaDto;
+      const { detalles, ventaAlContado, descuento, subtotal, ...ventaData } = createVentaDto;
+      let descuentoD = null;
+      let totalNeto = subtotal;
+      let descuentoTotal = 0;
+      if (descuento) {
+        descuentoD = await this.descuentosService.findOne(descuento);
 
+        if (!descuentoD) {
+          throw new NotFoundException('Descuento no encontrado.')
+        }
+        descuentoTotal = Math.ceil((subtotal * descuentoD.porcentaje) / 100);
+        totalNeto = subtotal - descuentoTotal;
+      }
+      //buscar cliente
+      const cliente = await this.clientesService.findOne(ventaData.cliente);
+      if (!cliente) {
+        throw new NotFoundException('Cliente no encontrado');
+      }
       // Crear y guardar la venta
       const venta = this.ventasRepository.create({
         ...ventaData,
         fecha: moment().tz("America/La_Paz").format("YYYY-MM-DD HH:mm:ss"),
         vendedor: { id: ventaData.vendedor },
         caja: { id: ventaData.cajaId },
-        cliente: { id: ventaData.cliente },
-        almacen: { id: ventaData.almacen }
+        cliente: { id: cliente.id },
+        nombreCliente: `${cliente.nombre} ${cliente.apellido}`,
+        almacen: { id: ventaData.almacen },
+        descuento: { id: descuentoD ? descuentoD.id : null },
+        nombreDescuento: descuentoD ? descuentoD.descuento : null,
+        porcentajeDescuento: descuentoD ? descuentoD.porcentaje : null,
+        total: totalNeto,
+        subtotal: subtotal,
       });
       const ventaGuardada = await queryRunner.manager.save(Venta, venta);
 
@@ -68,9 +91,6 @@ export class VentasService {
 
       // Registrar movimientos de inventario
       await this.registrarMovimientosInventario(detalles, ventaGuardada.codigo, ventaData.almacen);
-
-
-      await this.crearCobroContado(queryRunner, ventaGuardada);
 
       await queryRunner.commitTransaction();
       return this.findOne(ventaGuardada.id);
@@ -92,16 +112,35 @@ export class VentasService {
       // Buscar la venta existente con sus detalles
       const venta = await this.findOne(id);
 
-      const { detalles, ...ventaData } = updateVentaDto;
+      const { detalles, descuento, subtotal, montoRecibido, ...ventaData } = updateVentaDto;
 
       const client = await queryRunner.manager.findOne(Cliente, { where: { id: updateVentaDto.cliente } });
 
       venta.cliente = client;
+      venta.nombreCliente = `${client.nombre} ${client.apellido}`;
       venta.fechaEdit = updateVentaDto.fecha;
       venta.tipo_pago = updateVentaDto.tipo_pago;
-      venta.subtotal = updateVentaDto.subtotal;
-      venta.total = updateVentaDto.total;
 
+      let descuentoD = null;
+      let totalNeto = subtotal;
+      let descuentoTotal = 0;
+
+      if (descuento) {
+        descuentoD = await this.descuentosService.findOne(descuento);
+
+        if (!descuentoD) {
+          throw new NotFoundException('Descuento no encontrado.')
+        }
+        descuentoTotal = Math.ceil((subtotal * descuentoD.porcentaje) / 100);
+        totalNeto = subtotal - descuentoTotal;
+      }
+
+      venta.subtotal = updateVentaDto.subtotal;
+      venta.total = totalNeto;
+      venta.nombreDescuento = descuentoD ? descuentoD.descuento : null;
+      venta.porcentajeDescuento = descuentoD ? descuentoD.porcentaje : null;
+      venta.descuento = descuentoD ? descuentoD : null;
+      venta.montoRecibido = montoRecibido;
       // Guardar la venta actualizada
       const VG = await queryRunner.manager.save(Venta, venta);
 
@@ -333,7 +372,7 @@ export class VentasService {
   async findOne(id: string): Promise<Venta> {
     const venta = await this.ventasRepository.findOne({
       where: { id },
-      relations: ['detalles', 'almacen', 'detalles.producto', 'detalles', 'cliente', 'vendedor'],
+      relations: ['detalles', 'almacen', 'detalles.producto', 'detalles', 'cliente', 'descuento', 'vendedor'],
     });
 
     if (!venta) {
@@ -346,7 +385,7 @@ export class VentasService {
   async findOneEdit(id: string): Promise<Venta> {
     const venta = await this.ventasRepository.findOne({
       where: { id },
-      relations: ['detalles', 'detalles.producto', 'detalles', 'cliente', 'vendedor', 'cobros', 'almacen'],
+      relations: ['detalles', 'detalles.producto', 'detalles', 'cliente', 'vendedor', 'descuento', 'almacen'],
     });
 
     if (!venta) {
@@ -504,6 +543,7 @@ export class VentasService {
       const detalleVenta = queryRunner.manager.create(DetalleVenta, {
         ...detalle,
         producto,
+        nombreProducto: producto.alias,
         nombreVariante: variant.nombre,
         venta,
       });
@@ -517,18 +557,6 @@ export class VentasService {
         this.registrarMovimiento(detalle, 'venta', `Venta-${codigoVenta}`, almacenID),
       ),
     );
-  }
-
-  private async crearCobroContado(queryRunner, venta: Venta): Promise<void> {
-    const cobro = this.cobrosRepository.create({
-      venta,
-      monto: venta.total,
-      metodoPago: venta.tipo_pago,
-    });
-    venta.estadoCobro = true;
-    venta.ventaAlContado = true;
-    await queryRunner.manager.save(cobro);
-    await queryRunner.manager.save(venta);
   }
 
 }

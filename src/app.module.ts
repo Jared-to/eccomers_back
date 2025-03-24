@@ -21,6 +21,7 @@ import { ActivosModule } from './activos/activos.module';
 import { TraspasosModule } from './traspasos/traspasos.module';
 import { PedidosModule } from './pedidos/pedidos.module';
 import { ConfigModuleConfig } from './config/config.module';
+import { DescuentosModule } from './descuentos/descuentos.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { ConfigModuleConfig } from './config/config.module';
     TraspasosModule,
     PedidosModule,
     ConfigModuleConfig,
+    DescuentosModule,
   ],
 })
 export class AppModule { }

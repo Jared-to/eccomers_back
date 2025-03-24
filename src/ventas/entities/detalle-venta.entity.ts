@@ -17,9 +17,12 @@ export class DetalleVenta {
   venta: Venta;
 
 
-  @ManyToOne(() => Producto, { eager: false })
+  @ManyToOne(() => Producto, { eager: false, nullable: true })
   @JoinColumn({ name: 'producto_id' })
   producto: Producto;
+
+  @Column('text', { nullable: true })
+  nombreProducto: string;
 
   @Column('text', { nullable: true })
   nombreVariante: string;

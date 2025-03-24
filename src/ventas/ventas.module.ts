@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { VentasService } from './ventas.service';
 import { VentasController } from './ventas.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -11,16 +11,19 @@ import { AlmacenesModule } from 'src/almacenes/almacenes.module';
 import { Producto } from 'src/productos/entities/producto.entity';
 import { Almacen } from 'src/almacenes/entities/almacen.entity';
 import { CajasModule } from 'src/cajas/cajas.module';
-import { Cobros } from './entities/cobros.entity';
+import { DescuentosModule } from 'src/descuentos/descuentos.module';
+import { ClientesModule } from 'src/clientes/clientes.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Venta, DetalleVenta, Producto, Almacen, Cobros]),
+    TypeOrmModule.forFeature([Venta, DetalleVenta, Producto, Almacen]),
     AuthModule,
     InventarioModule,
     ProductosModule,
     AlmacenesModule,
-    CajasModule
+    CajasModule,
+    DescuentosModule,
+    forwardRef(() => ClientesModule),
   ],
   controllers: [VentasController],
   providers: [VentasService],

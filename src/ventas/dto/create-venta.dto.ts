@@ -1,6 +1,4 @@
-import { IsArray, IsBoolean, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
-import { CreateCobroDto } from './create-cobro.dto';
-import { Type } from 'class-transformer';
+import { IsArray, IsBoolean, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, ValidateNested } from 'class-validator';
 
 export class CreateDetalleVentaDto {
   @IsString()
@@ -10,7 +8,7 @@ export class CreateDetalleVentaDto {
 
   @IsString()
   @IsNotEmpty()
-  nombreVariante?:string;
+  nombreVariante?: string;
 
   @IsNumber()
   precio: number;
@@ -53,17 +51,25 @@ export class CreateVentaDto {
   total: number;
 
   @IsNumber()
-  descuento: number;
+  montoRecibido: number;
+
+  @IsUUID()
+  @IsOptional()
+  descuento?: string;
 
   @IsEnum(['EFECTIVO', 'QR', 'TRANSFERENCIA'])
   tipo_pago: string;
+
+  @IsString()
+  @IsOptional()
+  glosa?: string;
 
   @IsString()
   cajaId: string;
 
   @IsBoolean()
   ventaAlContado: boolean;
-  
+
   @IsArray()
   @IsOptional()
   detalles: CreateDetalleVentaDto[];

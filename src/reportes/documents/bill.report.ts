@@ -168,7 +168,7 @@ export const billReport = (venta: Venta): TDocumentDefinitions => {
             [
               { text: 'Descuento', colSpan: 6, alignment: 'right', style: 'tableRow' },
               {}, {}, {}, {}, {},
-              { text: venta.descuento.toFixed(2) + ' Bs.', style: 'totalRow' },
+              { text: (venta.subtotal - venta.total).toFixed(2) + ' Bs.', style: 'totalRow' },
             ],
             [
               { text: 'Total Neto', colSpan: 6, alignment: 'right', style: 'totalRow' },

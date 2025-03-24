@@ -5,7 +5,6 @@ import { UpdateVentaDto } from './dto/update-venta.dto';
 import { Venta } from './entities/venta.entity';
 import { ValidRoles } from 'src/auth/interface/valid-roles';
 import { Auth } from 'src/auth/decorators/auth.decorator';
-import { CreateCobroDto } from './dto/create-cobro.dto';
 import { User } from 'src/auth/entities/user.entity';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 

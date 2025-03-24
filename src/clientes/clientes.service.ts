@@ -111,20 +111,6 @@ export class ClientesService {
         if (venta.fecha >= fechaInicioDate && venta.fecha <= fechaFinDate) {
           // Acumular la deuda total del cliente sumando las deudas de las ventas dentro del rango
           totalVentas += venta.total;
-
-          // Filtrar los cobros de la venta que están dentro del rango de fechas
-          venta.cobros.forEach(cobro => {
-            if (cobro.cobrado === true && cobro.fechaPago >= fechaInicioDate && cobro.fechaPago <= fechaFinDate) {
-              cobros.push({
-                ventaId: venta.id,
-                cobroId: cobro.id,
-                monto: cobro.monto,
-                fechaPago: cobro.fechaPago,
-                metodoPago: cobro.metodoPago,
-                vendedor: venta.vendedor,
-              });
-            }
-          });
         }
       });
 

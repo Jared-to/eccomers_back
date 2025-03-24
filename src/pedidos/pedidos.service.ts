@@ -190,13 +190,14 @@ export class PedidosService {
       almacen: pedido.almacen.id,
       cajaId,
       cliente: cliente.id,
-      descuento: 0,
+      descuento: null,
       subtotal: pedido.total,
       tipo_pago: pedido.metodoPago,
       total: pedido.total,
       ventaAlContado: true,
       fecha: new Date(),
       vendedor: user,
+      montoRecibido: pedido.total,
       detalles
     }
 

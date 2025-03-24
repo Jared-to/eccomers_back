@@ -88,11 +88,32 @@ export const ReciboPedidoVenta = (pedido: Venta): TDocumentDefinitions => {
             { text: `${product.Total.toFixed(2)} Bs.`, style: 'tableRow', alignment: 'right' },
           ]),
           [
+            { text: 'Subtotal ', colSpan: 2, alignment: 'right', style: 'totalRow' },
+            {}, // Celda vacía para completar el colSpan
+            { text: `${pedido.subtotal.toFixed(2)} Bs.`, colSpan: 2, alignment: 'right', style: 'totalRow' },
+            {}
+          ],
+          [
+            { text: 'Descuento ', colSpan: 2, alignment: 'right', style: 'totalRow' },
+            {}, // Celda vacía para completar el colSpan
+            { text: `${(pedido.total - pedido.subtotal).toFixed(2)} Bs.`, colSpan: 2, alignment: 'right', style: 'totalRow' },
+            {}
+          ],
+          [
             { text: 'Total ', colSpan: 2, alignment: 'right', style: 'totalRow' },
             {}, // Celda vacía para completar el colSpan
             { text: `${pedido.total.toFixed(2)} Bs.`, colSpan: 2, alignment: 'right', style: 'totalRow' },
             {}
           ],
+          [
+            {
+              text: `Nota : ${pedido.glosa || 'Sin observaciones'}`,
+              colSpan: 4,
+              alignment: 'left',
+              style: 'totalRow'
+            },
+            {}, {}, {}
+          ]
         ],
       },
       margin: [0, 5],

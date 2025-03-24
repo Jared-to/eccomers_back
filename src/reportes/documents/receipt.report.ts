@@ -109,7 +109,7 @@ export const receiptReport = (venta: Venta): TDocumentDefinitions => {
           {
             width: '70%',
             text: [
-              { text: `Cliente: ${venta.cliente?.nombre || 'Cliente desconocido'}\n`, style: 'bodyText' },
+              { text: `Cliente: ${venta.cliente.nombre || 'Cliente desconocido'}\n`, style: 'bodyText' },
               { text: `Dirección: ${venta.cliente?.direccion || 'Dirección desconocida'}\n`, style: 'bodyText' },
               { text: `Código de Venta: ${venta.codigo}\n`, style: 'bodyText' },
               { text: `Fecha de Venta: ${formatDate(venta.fecha)}\n`, style: 'bodyText' },
@@ -165,7 +165,7 @@ export const receiptReport = (venta: Venta): TDocumentDefinitions => {
             [
               { text: 'Descuento', colSpan: 3, alignment: 'right', style: 'totalRow' },
               {}, {},
-              { text: venta.descuento.toFixed(2), style: 'totalRow' },
+              { text: (venta.subtotal - venta.total).toFixed(2), style: 'totalRow' },
             ],
             [
               { text: 'Total Neto', colSpan: 3, alignment: 'right', style: 'totalRow' },
