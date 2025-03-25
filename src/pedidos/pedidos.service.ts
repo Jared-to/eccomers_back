@@ -159,7 +159,7 @@ export class PedidosService {
       relations: ['almacen', 'detalles', 'detalles.producto', 'usuario', 'venta']
     })
   }
-  async pedidoVenta(id: string, cajaId: string, user: string) {
+  async pedidoVenta(id: string, cajaId: string, user: string, metodoPago: string) {
     const pedido = await this.pedidoRepository.findOne(
       {
         where: { id },
@@ -192,7 +192,7 @@ export class PedidosService {
       cliente: cliente.id,
       descuento: null,
       subtotal: pedido.total,
-      tipo_pago: pedido.metodoPago,
+      tipo_pago: metodoPago,
       total: pedido.total,
       ventaAlContado: true,
       fecha: new Date(),

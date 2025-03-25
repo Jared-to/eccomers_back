@@ -58,9 +58,9 @@ export class PedidosController {
     return this.pedidosService.reanudarPedido(id, user);
   }
 
-  @Post('confirmar/:id/:id_caja/:user')
-  confirmarPedido(@Param('id') id: string, @Param('id_caja') caja: string, @Param('user') user: string,) {
-    return this.pedidosService.pedidoVenta(id, caja, user);
+  @Post('confirmar/:id/:id_caja/:user/:metodo_pago')
+  confirmarPedido(@Param('id') id: string, @Param('id_caja') caja: string, @Param('user') user: string, @Param('metodo_pago') metodoPago: string,) {
+    return this.pedidosService.pedidoVenta(id, caja, user, metodoPago);
   }
 
   @Delete('/:id')
