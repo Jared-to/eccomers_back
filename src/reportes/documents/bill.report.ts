@@ -160,10 +160,26 @@ export const billReport = (venta: Venta): TDocumentDefinitions => {
               { text: product.Total.toFixed(2) + ' Bs.', style: 'tableRow' },
             ]),
             // Subtotal, descuento y total neto
+            // [
+            //   { text: 'Subtotal', colSpan: 6, alignment: 'right', style: 'tableRow' },
+            //   {}, {}, {}, {}, {},
+            //   { text: venta.subtotal.toFixed(2) + ' Bs.', style: 'totalRow' },
+            // ],
+            // [
+            //   { text: 'Descuento', colSpan: 6, alignment: 'right', style: 'tableRow' },
+            //   {}, {}, {}, {}, {},
+            //   { text: venta.descuento.toFixed(2) + ' Bs.', style: 'totalRow' },
+            // ],
+            // [
+            //   { text: 'Total Neto', colSpan: 6, alignment: 'right', style: 'totalRow' },
+            //   {}, {}, {}, {}, {},
+            //   { text: venta.total.toFixed(2) + ' Bs.', style: 'totalRow' },
+            // ],
             [
-              { text: 'Subtotal', colSpan: 6, alignment: 'right', style: 'tableRow' },
-              {}, {}, {}, {}, {},
-              { text: venta.subtotal.toFixed(2) + ' Bs.', style: 'totalRow' },
+              { text: 'Subtotal', colSpan: 5, alignment: 'right', style: 'tableRow' },
+              {}, {}, {}, {},
+              { text: venta.subtotal.toFixed(2) + ' Bs.', colSpan: 2, alignment: 'right', style: 'totalRow' },
+              {},
             ],
             [
               { text: 'Descuento', colSpan: 6, alignment: 'right', style: 'tableRow' },
@@ -171,9 +187,10 @@ export const billReport = (venta: Venta): TDocumentDefinitions => {
               { text: (venta.subtotal - venta.total).toFixed(2) + ' Bs.', style: 'totalRow' },
             ],
             [
-              { text: 'Total Neto', colSpan: 6, alignment: 'right', style: 'totalRow' },
-              {}, {}, {}, {}, {},
-              { text: venta.total.toFixed(2) + ' Bs.', style: 'totalRow' },
+              { text: 'Total Neto', colSpan: 5, alignment: 'right', style: 'totalRow' },
+              {}, {}, {}, {},
+              { text: venta.total.toFixed(2) + ' Bs.', colSpan: 2, alignment: 'right', style: 'totalRow' },
+              {},
             ],
           ],
         },

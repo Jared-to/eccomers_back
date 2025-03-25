@@ -16,6 +16,9 @@ import { cajaReport } from './documents/reportCaja.report';
 import { Pedido } from 'src/pedidos/entities/pedido.entity';
 import { ReciboPedido } from './documents/bill.reportPedido.report';
 import { ReciboPedidoVenta } from './documents/bill.reportVenta.report';
+import { ReportGastos } from './documents/reportGastos.report';
+import { ReportVentas } from './documents/reportVentasFechas.report';
+import { User } from 'src/auth/entities/user.entity';
 
 @Injectable()
 export class ReportesService {
@@ -23,6 +26,7 @@ export class ReportesService {
     private readonly printer: PrinterService,
     private readonly ventasService: VentasService,
     private readonly clientesService: ClientesService,
+    private readonly gastosService: GastosService,
     @InjectRepository(Venta)
     private readonly ventasRepository: Repository<Venta>,
     @InjectRepository(Gasto)
@@ -106,9 +110,39 @@ export class ReportesService {
     return pdfDoc;
   }
 
+  
+  // ReportesGasto
+  async obtenerPdfGastos(fechaInicio: string, fechaFin: string, usuario: User): Promise<PDFKit.PDFDocument> {
+    const gastos = await this.gastosService.findAllDates(fechaInicio, fechaFin, usuario);
 
+    if (gastos.length === 0) {
+        throw new Error('No se encontraron gastos en el rango de fechas seleccionado');
+    }
 
-  //MODIFICADO
+    const docDefinition = ReportGastos(gastos, fechaInicio, fechaFin);
+    
+    return this.printer.createPdf(docDefinition);
+  }
+
+  // Reporte de Ventas
+  async reporteVentasPDF(fechaInicio: string, fechaFin: string, usuario: User): Promise<PDFKit.PDFDocument> {
+    // Pasamos las fechas al reporte de ventas
+    
+    const ventas = await this.ventasService.findAllDates(fechaInicio, fechaFin, usuario);
+  
+    if (ventas.length === 0) {
+      throw new Error('No se encontraron ventas en el rango de fechas seleccionado');
+    }
+    console.log("Servicio "+fechaInicio);
+    console.log("Servicio "+fechaFin);
+    console.log("Servicio "+usuario);
+    
+    const docDefinition = ReportVentas(ventas, fechaInicio, fechaFin);
+    
+    return this.printer.createPdf(docDefinition);
+  }
+  
+  //END MODIFICADO
 
   async obtenerPdfVentas(): Promise<PDFKit.PDFDocument> {
     const docDefinition = billReports();

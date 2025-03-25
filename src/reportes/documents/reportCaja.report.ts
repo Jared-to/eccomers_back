@@ -38,8 +38,7 @@ const styles: StyleDictionary = {
     fontSize: 10,
     alignment: 'center',
   },
-  totalRow: 
-  { 
+  totalRow: { 
     bold: true, 
     fontSize: 10, 
     fillColor: '#568cc1', 
@@ -62,6 +61,7 @@ const styles: StyleDictionary = {
 export const cajaReport = (caja: Caja, ventas: Venta[], gastos: Gasto[]): TDocumentDefinitions => {
   const totalEfectivo = caja.ventas_Efectivo + caja.gastos_efectivo;
   const totalQR = caja.ventas_QR + caja.gastos_QR;
+  
   return {
     pageSize: 'A4',
     header: [
@@ -91,56 +91,75 @@ export const cajaReport = (caja: Caja, ventas: Venta[], gastos: Gasto[]): TDocum
           },
         ],
       },
-      { text: 'Resumen de Movimientos', style: 'subHeader' },
+      
+      { text: 'Ventas y Gastos en Efectivo', style: 'subHeader' },
       {
         layout: 'lightHorizontalLines',
         table: {
-          widths: ['auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto'],
+          // widths: ['auto', 'auto', 'auto', 'auto', 'auto'],
+          widths: ['20%', '20%', '20%', '20%', '20%'],
+          headerRows: 1,
+          body: [
+            [
+              { text: 'Ventas Efectivo', style: 'tableHeader' },
+              { text: 'Gastos Efectivo', style: 'tableHeader' },
+              { text: 'Total Ingresos Efectivo', style: 'tableHeader' },
+              { text: 'Total Salidas Efectivo', style: 'tableHeader' },
+              { text: 'Saldo Cierre Efectivo', style: 'tableHeader' },
+            ],
+            [
+              { text: `${caja.ventas_Efectivo.toFixed(2)} Bs.`, style: 'tableRow' },
+              { text: `${caja.gastos_efectivo.toFixed(2)} Bs.`, style: 'tableRow' },
+              { text: `${(caja.ventas_Efectivo).toFixed(2)} Bs.`, style: 'tableRow' },
+              { text: `${(caja.gastos_efectivo).toFixed(2)} Bs.`, style: 'tableRow' },
+              { text: `${caja.saldo_cierre_efectivo.toFixed(2)} Bs.`, style: 'tableRow' },
+            ],
+            [
+              { text: 'Total en Efectivo:', colSpan: 4, alignment: 'right', style: 'totalRow' },
+              {}, {}, {},
+              { text: `${totalEfectivo.toFixed(2)} Bs.`, style: 'totalRow' },
+            ],
+          ],
+        },
+      },
+
+      { text: 'Ventas y Gastos en QR', style: 'subHeader' },
+      {
+        layout: 'lightHorizontalLines',
+        table: {
+          //widths: ['auto', 'auto', 'auto', 'auto', 'auto'],
+          widths: ['20%', '20%', '20%', '20%', '20%'],
           headerRows: 1,
           body: [
             [
               { text: 'Ventas QR', style: 'tableHeader' },
               { text: 'Gastos QR', style: 'tableHeader' },
-              { text: 'Ventas Efectivo', style: 'tableHeader' },
-              { text: 'Gastos Efectivo', style: 'tableHeader' },
               { text: 'Total Ingresos QR', style: 'tableHeader' },
               { text: 'Total Salidas QR', style: 'tableHeader' },
               { text: 'Saldo Cierre QR', style: 'tableHeader' },
-              { text: 'Saldo Cierre Efectivo', style: 'tableHeader' },
             ],
             [
               { text: `${caja.ventas_QR.toFixed(2)} Bs.`, style: 'tableRow' },
               { text: `${caja.gastos_QR.toFixed(2)} Bs.`, style: 'tableRow' },
-              { text: `${caja.ventas_Efectivo.toFixed(2)} Bs.`, style: 'tableRow' },
-              { text: `${caja.gastos_efectivo.toFixed(2)} Bs.`, style: 'tableRow' },
-              { text: `${(caja.ventas_QR - caja.gastos_QR).toFixed(2)} Bs.`, style: 'tableRow' },
-              { text: `${(caja.ventas_Efectivo - caja.gastos_efectivo).toFixed(2)} Bs.`, style: 'tableRow' },
+              { text: `${(caja.ventas_QR).toFixed(2)} Bs.`, style: 'tableRow' },
+              { text: `${(caja.gastos_QR).toFixed(2)} Bs.`, style: 'tableRow' },
               { text: `${caja.saldo_cierre_QR.toFixed(2)} Bs.`, style: 'tableRow' },
-              { text: `${caja.saldo_cierre_efectivo.toFixed(2)} Bs.`, style: 'tableRow' },
             ],
             [
-              { text: 'Total en Efectivo:', colSpan: 7, alignment: 'right', style: 'totalRow' },
-              {}, {}, {}, {}, {}, {},
-              { text: `${totalEfectivo.toFixed(2)} Bs.`, style: 'totalRow' },
-            ],
-            [
-              { text: `Total Movimientos QR:`, colSpan: 7, alignment: 'right', style: 'totalRow'  },
-              {}, {}, {}, {}, {}, {},
+              { text: 'Total en QR:', colSpan: 4, alignment: 'right', style: 'totalRow' },
+              {}, {}, {},
               { text: `${totalQR.toFixed(2)} Bs.`, style: 'totalRow' },
-            ],
-            [
-              { text: 'Saldo Cierre Neto', colSpan: 7, alignment: 'right', style: 'totalRow' },
-              {}, {}, {}, {}, {}, {},
-              { text: `${caja.saldo_cierre_neto.toFixed(2)} Bs.`, style: 'totalRow' },
             ],
           ],
         },
       },
-      { text: 'Ventas Registradas', style: 'subHeader'},
+
+      { text: 'Ventas Registradas', style: 'subHeader' },
       {
         layout: 'lightHorizontalLines',
         table: {
-          widths: ['auto', 'auto', 'auto', 'auto', 'auto', 'auto'],
+          //widths: ['auto', 'auto', 'auto', 'auto', 'auto', 'auto'],
+          widths: ['16%', '16%', '16%', '16%', '16%', '16%'],
           headerRows: 1,
           body: [
             [
@@ -162,11 +181,13 @@ export const cajaReport = (caja: Caja, ventas: Venta[], gastos: Gasto[]): TDocum
           ],
         },
       },
+
       { text: 'Resumen de Gastos', style: 'subHeader' },
       {
         layout: 'lightHorizontalLines',
         table: {
-          widths: ['auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto'],
+          //widths: ['auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto'],
+          widths: ['14%', '14%', '14%', '14%', '14%', '14%', '16%'],
           headerRows: 1,
           body: [
             [
