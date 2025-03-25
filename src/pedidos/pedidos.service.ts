@@ -198,6 +198,7 @@ export class PedidosService {
       fecha: new Date(),
       vendedor: user,
       montoRecibido: pedido.total,
+      glosa: pedido.glosa,
       detalles
     }
 

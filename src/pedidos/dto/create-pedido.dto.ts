@@ -46,6 +46,8 @@ export class CreatePedidoDto {
   @IsNumber()
   delivery?: number;
 
+  @IsString()
+  glosa?: string;
 
   @IsUUID()
   sucursal: string

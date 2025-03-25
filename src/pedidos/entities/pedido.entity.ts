@@ -63,6 +63,9 @@ export class Pedido {
   @Column('text', { nullable: true })
   fotoRecibo: string;
 
+  @Column('text', { nullable: true })
+  glosa: string;
+
   @Column({ type: 'enum', enum: ['Solicitado', 'Aceptado', 'Vendido', 'Rechazado', 'Cancelado'], default: 'Solicitado' })
   estado: string;
 
