@@ -120,6 +120,7 @@ export class VentasService {
       venta.nombreCliente = `${client.nombre} ${client.apellido}`;
       venta.fechaEdit = updateVentaDto.fecha;
       venta.tipo_pago = updateVentaDto.tipo_pago;
+      venta.glosa = updateVentaDto.glosa;
 
       let descuentoD = null;
       let totalNeto = subtotal;
@@ -377,44 +378,44 @@ export class VentasService {
 
     // Si ambas fechas son 'xx', obtenemos todas las ventas
     if (fechaInicio === 'xx' && fechaFin === 'xx') {
-        return this.ventasRepository.find({
-            where: isAdmin ? {} : { vendedor: { id: user.id } },
-            relations: ['detalles', 'detalles.producto', 'almacen', 'cliente', 'vendedor', 'caja'],
-        });
+      return this.ventasRepository.find({
+        where: isAdmin ? {} : { vendedor: { id: user.id } },
+        relations: ['detalles', 'detalles.producto', 'almacen', 'cliente', 'vendedor', 'caja'],
+      });
     }
 
     // Función para normalizar la fecha
     const normalizeDate = (date: string): Date => {
-        const d = new Date(date);
-        if (isNaN(d.getTime())) throw new Error(`Fecha inválida: ${date}`);
-        d.setHours(0, 0, 0, 0);
-        return d;
+      const d = new Date(date);
+      if (isNaN(d.getTime())) throw new Error(`Fecha inválida: ${date}`);
+      d.setHours(0, 0, 0, 0);
+      return d;
     };
 
     try {
-        const fechaInicioNormalizada = normalizeDate(fechaInicio);
-        const fechaFinNormalizada = normalizeDate(fechaFin);
+      const fechaInicioNormalizada = normalizeDate(fechaInicio);
+      const fechaFinNormalizada = normalizeDate(fechaFin);
 
-        // Ajustamos la fecha final al final del día
-        fechaFinNormalizada.setHours(23, 59, 59, 999);
+      // Ajustamos la fecha final al final del día
+      fechaFinNormalizada.setHours(23, 59, 59, 999);
 
-        const whereConditions: any = {
-            fecha: Between(fechaInicioNormalizada, fechaFinNormalizada),
-        };
+      const whereConditions: any = {
+        fecha: Between(fechaInicioNormalizada, fechaFinNormalizada),
+      };
 
-        if (!isAdmin) {
-            whereConditions.vendedor = { id: user.id };
-        }
+      if (!isAdmin) {
+        whereConditions.vendedor = { id: user.id };
+      }
 
-        const ventas = await this.ventasRepository.find({
-            where: whereConditions,
-            relations: ['detalles', 'detalles.producto', 'almacen', 'cliente', 'vendedor', 'caja'],
-        });
+      const ventas = await this.ventasRepository.find({
+        where: whereConditions,
+        relations: ['detalles', 'detalles.producto', 'almacen', 'cliente', 'vendedor', 'caja'],
+      });
 
-        return ventas;
+      return ventas;
     } catch (error) {
-        console.error("Error en findAllDates:", error.message);
-        return [];
+      console.error("Error en findAllDates:", error.message);
+      return [];
     }
   }
   //END CODIGO MODIFICADO

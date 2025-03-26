@@ -178,8 +178,12 @@ export class CajasService {
   async findAll(): Promise<Caja[]> {
     return await this.cajaRepository.find({
       relations: ['usuario'],
+      order: {
+        fecha_apertura: 'DESC', // Ordena por fecha_apertura de más reciente a más antiguo
+      },
     });
   }
+  
 
   async findOne(id: string): Promise<Caja> {
     const caja = await this.cajaRepository.findOne({

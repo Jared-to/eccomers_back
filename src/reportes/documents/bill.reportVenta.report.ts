@@ -96,7 +96,7 @@ export const ReciboPedidoVenta = (pedido: Venta): TDocumentDefinitions => {
           [
             { text: 'Descuento ', colSpan: 2, alignment: 'right', style: 'totalRow' },
             {}, // Celda vacía para completar el colSpan
-            { text: `${(pedido.total - pedido.subtotal).toFixed(2)} Bs.`, colSpan: 2, alignment: 'right', style: 'totalRow' },
+            { text: `${(pedido.subtotal - pedido.total ).toFixed(2)} Bs.`, colSpan: 2, alignment: 'right', style: 'totalRow' },
             {}
           ],
           [
