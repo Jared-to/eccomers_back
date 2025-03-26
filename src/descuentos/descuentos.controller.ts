@@ -18,14 +18,14 @@ export class DescuentosController {
     return this.descuentosService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.descuentosService.findOne(id);
-  }
-
   @Get('activos')
   async obtenerDescuentosActivos(): Promise<Descuento[]> {
     return this.descuentosService.obtenerDescuentosActivos();
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.descuentosService.findOne(id);
   }
 
   @Patch('estado/:id')

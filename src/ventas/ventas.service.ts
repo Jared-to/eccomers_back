@@ -411,10 +411,6 @@ export class VentasService {
             relations: ['detalles', 'detalles.producto', 'almacen', 'cliente', 'vendedor', 'caja'],
         });
 
-        console.log("findAllDates - Fecha Inicio:", fechaInicioNormalizada);
-        console.log("findAllDates - Fecha Fin:", fechaFinNormalizada);
-        console.log("Ventas encontradas:", ventas.length);
-
         return ventas;
     } catch (error) {
         console.error("Error en findAllDates:", error.message);

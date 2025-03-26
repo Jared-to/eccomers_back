@@ -133,9 +133,6 @@ export class ReportesService {
     if (ventas.length === 0) {
       throw new Error('No se encontraron ventas en el rango de fechas seleccionado');
     }
-    console.log("Servicio "+fechaInicio);
-    console.log("Servicio "+fechaFin);
-    console.log("Servicio "+usuario);
     
     const docDefinition = ReportVentas(ventas, fechaInicio, fechaFin);
     

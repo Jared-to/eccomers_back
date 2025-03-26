@@ -57,6 +57,7 @@ export class DescuentosService {
     const hoy = new Date(); // Fecha actual
     return this.descuentoRepository.find({
       where: {
+        estado: true,
         fechaInicio: LessThanOrEqual(hoy), // fechaInicio <= hoy
         fechaFin: MoreThanOrEqual(hoy),     // fechaFin >= hoy
       },

@@ -6,7 +6,7 @@ const formatDate = (value: string | Date): string => {
 
   const date = new Date(value);
   if (isNaN(date.getTime())) {
-    return 'Fecha inválida'; // Maneja fechas incorrectas
+    return ''; // Maneja fechas incorrectas
   }
 
   return date.toLocaleDateString('es-ES', {
@@ -71,12 +71,11 @@ const styles: StyleDictionary = {
 
 // Generación del Reporte de Ventas
 export const ReportVentas = (ventas: Venta[], fechaInicio: string, fechaFin: string): TDocumentDefinitions => {
+  console.log(fechaInicio, fechaFin);
+
   // Convertir fechas a formato legible
   const fechaInicioFormatted = formatDate(fechaInicio);
   const fechaFinFormatted = formatDate(fechaFin);
-
-  console.log("Prueba inicio en PDF:", fechaInicioFormatted);
-  console.log("Prueba fin en PDF:", fechaFinFormatted);
 
   // Calcular totales
   const totalVentas = ventas.reduce((sum, venta) => sum + venta.total, 0);
@@ -100,7 +99,7 @@ export const ReportVentas = (ventas: Venta[], fechaInicio: string, fechaFin: str
       style: 'pageNumber',
     }),
     content: [
-      { text: `Periodo del reporte: ${fechaInicioFormatted} - ${fechaFinFormatted}`, style: 'subHeader', alignment: 'center', margin: [0, 0, 0, 10] },
+      { text: `Periodo del reporte: ${fechaInicioFormatted || 'Todas las Ventas'} - ${fechaFinFormatted || ''}`, style: 'subHeader', alignment: 'center', margin: [0, 0, 0, 10] },
       { text: 'Información de Ventas', style: 'subHeader' },
       {
         layout: 'lightHorizontalLines',
