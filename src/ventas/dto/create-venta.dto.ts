@@ -51,7 +51,8 @@ export class CreateVentaDto {
   total: number;
 
   @IsNumber()
-  montoRecibido: number;
+  @IsOptional()
+  montoRecibido?: number;
 
   @IsUUID()
   @IsOptional()
