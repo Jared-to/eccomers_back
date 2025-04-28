@@ -81,51 +81,61 @@ export class GastosService {
 
 
   async findAllDates(fechaInicio: string | 'xx', fechaFin: string | 'xx', user: User): Promise<Gasto[]> {
+    const isAdmin = user.roles.some(role => role === 'admin');
 
-    // Si ambas fechas son 'xx', obtenemos todas las ventas
     if (fechaInicio === 'xx' && fechaFin === 'xx') {
-
-      const isAdmin = user.roles.some(role => role === 'admin');
-
       return this.gastoRepository.find({
         where: isAdmin ? {} : { usuario: { id: user.id } },
         relations: ['usuario', 'categoria', 'caja'],
       });
     }
 
-    // Normalizamos las fechas a medianoche para ignorar horas
-    const normalizeDate = (date: string) => {
-      const d = new Date(date);
-      d.setHours(0, 0, 0, 0); // Establecemos la hora a medianoche
-      return d;
+    const normalizeDateStart = (date: string): Date => {
+      const localDate = new Date(date);
+      if (isNaN(localDate.getTime())) throw new Error(`Fecha inválida: ${date}`);
+      const timezoneOffset = localDate.getTimezoneOffset();
+      localDate.setMinutes(localDate.getMinutes() - timezoneOffset);
+      localDate.setHours(0, 0, 0, 0);
+      localDate.setDate(localDate.getDate() + 1)
+      return localDate;
     };
 
-    const fechaInicioNormalizada = normalizeDate(fechaInicio);
-    const fechaFinNormalizada = normalizeDate(fechaFin);
+    const normalizeDateEnd = (date: string): Date => {
+      const localDate = new Date(date);
+      if (isNaN(localDate.getTime())) throw new Error(`Fecha inválida: ${date}`);
 
-    // Si la fecha final es hoy, ajustamos para obtener hasta el final del día (23:59:59)
-    if (fechaFin === fechaInicio) {
-      fechaFinNormalizada.setHours(23, 59, 59, 999); // Fin del día (23:59:59)
+      const timezoneOffset = localDate.getTimezoneOffset();
+      localDate.setMinutes(localDate.getMinutes() - timezoneOffset);
+
+      localDate.setHours(0, 0, 0, 0); // Ponerlo al inicio del día
+      localDate.setDate(localDate.getDate() + 2); // Sumamos 1 día
+      localDate.setMilliseconds(-1); // Vamos al último milisegundo del día anterior
+      return localDate;
+    };
+
+
+    try {
+      const fechaInicioNormalizada = normalizeDateStart(fechaInicio);
+      const fechaFinNormalizada = normalizeDateEnd(fechaFin);
+
+      const whereConditions: any = {
+        fecha: Between(fechaInicioNormalizada, fechaFinNormalizada),
+      };
+
+      if (!isAdmin) {
+        whereConditions.vendedor = { id: user.id };
+      }
+
+      const ventas = await this.gastoRepository.find({
+        where: whereConditions,
+        relations: ['usuario', 'categoria', 'caja'],
+      });
+
+      return ventas;
+    } catch (error) {
+      console.error("Error en findAllDates:", error.message);
+      return [];
     }
-
-
-    const whereConditions: any = {};
-
-    // Filtrar por rango de fechas si ambas fechas son proporcionadas
-    if (fechaInicio && fechaFin) {
-      whereConditions.fecha = Between(fechaInicioNormalizada, fechaFinNormalizada);
-    } else if (fechaInicio) {
-      whereConditions.fecha = { $gte: fechaInicioNormalizada };
-    } else if (fechaFin) {
-      whereConditions.fecha = { $lte: fechaFinNormalizada };
-    }
-
-    const gastos = await this.gastoRepository.find({
-      where: whereConditions,
-      relations: ['usuario', 'categoria', 'caja']
-    });
-
-    return gastos;
   }
 
   async findOne(id: string): Promise<Gasto> {
