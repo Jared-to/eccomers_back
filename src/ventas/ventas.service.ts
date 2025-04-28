@@ -376,7 +376,6 @@ export class VentasService {
   async findAllDates(fechaInicio: string | 'xx', fechaFin: string | 'xx', user: User): Promise<Venta[]> {
     const isAdmin = user.roles.some(role => role === 'admin');
 
-    // Si ambas fechas son 'xx', obtenemos todas las ventas
     if (fechaInicio === 'xx' && fechaFin === 'xx') {
       return this.ventasRepository.find({
         where: isAdmin ? {} : { vendedor: { id: user.id } },
@@ -384,20 +383,33 @@ export class VentasService {
       });
     }
 
-    // Función para normalizar la fecha
-    const normalizeDate = (date: string): Date => {
-      const d = new Date(date);
-      if (isNaN(d.getTime())) throw new Error(`Fecha inválida: ${date}`);
-      d.setHours(0, 0, 0, 0);
-      return d;
+    const normalizeDateStart = (date: string): Date => {
+      const localDate = new Date(date);
+      if (isNaN(localDate.getTime())) throw new Error(`Fecha inválida: ${date}`);
+      const timezoneOffset = localDate.getTimezoneOffset();
+      localDate.setMinutes(localDate.getMinutes() - timezoneOffset);
+      localDate.setHours(0, 0, 0, 0);
+      localDate.setDate(localDate.getDate() + 1)
+      return localDate;
     };
 
-    try {
-      const fechaInicioNormalizada = normalizeDate(fechaInicio);
-      const fechaFinNormalizada = normalizeDate(fechaFin);
+    const normalizeDateEnd = (date: string): Date => {
+      const localDate = new Date(date);
+      if (isNaN(localDate.getTime())) throw new Error(`Fecha inválida: ${date}`);
+      
+      const timezoneOffset = localDate.getTimezoneOffset();
+      localDate.setMinutes(localDate.getMinutes() - timezoneOffset);
+    
+      localDate.setHours(0, 0, 0, 0); // Ponerlo al inicio del día
+      localDate.setDate(localDate.getDate() + 2); // Sumamos 1 día
+      localDate.setMilliseconds(-1); // Vamos al último milisegundo del día anterior
+      return localDate;
+    };
+    
 
-      // Ajustamos la fecha final al final del día
-      fechaFinNormalizada.setHours(23, 59, 59, 999);
+    try {
+      const fechaInicioNormalizada = normalizeDateStart(fechaInicio);
+      const fechaFinNormalizada = normalizeDateEnd(fechaFin);
 
       const whereConditions: any = {
         fecha: Between(fechaInicioNormalizada, fechaFinNormalizada),
@@ -418,6 +430,8 @@ export class VentasService {
       return [];
     }
   }
+
+
   //END CODIGO MODIFICADO
 
 

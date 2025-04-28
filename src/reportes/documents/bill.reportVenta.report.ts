@@ -16,11 +16,11 @@ const formatDate = (value: string | Date): string => {
 const styles: StyleDictionary = {
   header: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 2] },
   subHeader: { fontSize: 10, bold: true, alignment: 'center', margin: [0, 3] },
-  bodyText: { fontSize: 8, margin: [0, 1] },
+  bodyText: { fontSize: 9, margin: [0, 1] },
   boldText: { fontSize: 8, bold: true },
   highlightText: { fontSize: 9, bold: true },
   tableHeader: { bold: true, fontSize: 6, alignment: 'center' },
-  tableRow: { fontSize: 6, alignment: 'center' },
+  tableRow: { fontSize: 8, alignment: 'center',bold:true },
   totalRow: { bold: true, fontSize: 7, alignment: 'right' },
   footer: { fontSize: 8, alignment: 'center', margin: [0, 3] },
 };
@@ -83,9 +83,9 @@ export const ReciboPedidoVenta = (pedido: Venta): TDocumentDefinitions => {
           ],
           ...pedidoProductos.map((product) => [
             { text: product.Producto + '-' + product.variante, style: 'tableRow', alignment: 'left' },
-            { text: `${product.Precio.toFixed(2)}`, style: 'tableRow', alignment: 'center' },
+            { text: `${product.Precio.toFixed(1)}`, style: 'tableRow', alignment: 'center' },
             { text: product.Cantidad.toString(), style: 'tableRow', alignment: 'center' },
-            { text: `${product.Total.toFixed(2)} Bs.`, style: 'tableRow', alignment: 'right' },
+            { text: `${product.Total.toFixed(1)}`, style: 'tableRow', alignment: 'right' },
           ]),
           [
             { text: 'Subtotal ', colSpan: 2, alignment: 'right', style: 'totalRow' },
