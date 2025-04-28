@@ -9,6 +9,8 @@ const formatDate = (value: string | Date): string => {
     return ''; // Maneja fechas incorrectas
   }
 
+  date.setDate(date.getDate() + 1);
+
   return date.toLocaleDateString('es-ES', {
     year: 'numeric',
     month: 'long',
@@ -71,7 +73,6 @@ const styles: StyleDictionary = {
 
 // Generación del Reporte de Ventas
 export const ReportVentas = (ventas: Venta[], fechaInicio: string, fechaFin: string): TDocumentDefinitions => {
-  console.log(fechaInicio, fechaFin);
 
   // Convertir fechas a formato legible
   const fechaInicioFormatted = formatDate(fechaInicio);
