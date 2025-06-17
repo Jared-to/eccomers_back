@@ -396,16 +396,16 @@ export class VentasService {
     const normalizeDateEnd = (date: string): Date => {
       const localDate = new Date(date);
       if (isNaN(localDate.getTime())) throw new Error(`Fecha inválida: ${date}`);
-      
+
       const timezoneOffset = localDate.getTimezoneOffset();
       localDate.setMinutes(localDate.getMinutes() - timezoneOffset);
-    
+
       localDate.setHours(0, 0, 0, 0); // Ponerlo al inicio del día
       localDate.setDate(localDate.getDate() + 2); // Sumamos 1 día
       localDate.setMilliseconds(-1); // Vamos al último milisegundo del día anterior
       return localDate;
     };
-    
+
 
     try {
       const fechaInicioNormalizada = normalizeDateStart(fechaInicio);

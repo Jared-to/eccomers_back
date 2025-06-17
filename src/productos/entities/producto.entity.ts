@@ -37,8 +37,8 @@ export class Producto {
 
   // Relación muchos a uno
   @ManyToOne(() => Categoria, (categoria) => categoria.productos, {
-    nullable: false, // Hace obligatorio que cada producto tenga una categoría
-    onDelete: 'CASCADE', // Elimina los productos si se elimina la categoría
+    nullable: true,
+    onDelete: 'SET NULL',
   })
   categoria: Categoria;
 

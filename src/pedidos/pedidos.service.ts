@@ -11,6 +11,7 @@ import { ClientesService } from 'src/clientes/clientes.service';
 import { VentasService } from 'src/ventas/ventas.service';
 import * as moment from 'moment-timezone';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ProductosService } from 'src/productos/productos.service';
 
 @Injectable()
 export class PedidosService {
@@ -24,6 +25,7 @@ export class PedidosService {
     private readonly clientesService: ClientesService,
     private readonly ventasService: VentasService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly productoService: ProductosService,
   ) { }
   async solicitudPedido(createPedidoDto: CreatePedidoDto, file?: Express.Multer.File) {
     const direccionGps = createPedidoDto.dir_gps ? JSON.parse(createPedidoDto.dir_gps) : null;
@@ -43,9 +45,11 @@ export class PedidosService {
     const pedidoG = await this.pedidoRepository.save(pedido);
     //detalles del pedido
     for (const element of detalles) {
+      const producto = await this.productoService.findOneProducto(element.productoId)
       const detalle = await this.detallePedidoRepository.create({
         ...element,
         producto: { id: element.productoId },
+        nombreProduct: producto.alias,
         pedido: { id: pedidoG.id },
       })
       await this.detallePedidoRepository.save(detalle)

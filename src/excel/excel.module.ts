@@ -10,6 +10,8 @@ import { Inventario } from 'src/inventario/entities/inventario.entity';
 import { Producto } from 'src/productos/entities/producto.entity';
 import { Almacen } from 'src/almacenes/entities/almacen.entity';
 import { InventarioModule } from 'src/inventario/inventario.module';
+import { AuthModule } from 'src/auth/auth.module';
+import { VentasModule } from 'src/ventas/ventas.module';
 
 @Module({
   controllers: [ExcelController],
@@ -20,7 +22,9 @@ import { InventarioModule } from 'src/inventario/inventario.module';
       dest: './uploads', // Directorio donde se almacenan temporalmente los archivos
     }),
     ProductosModule,CategoriasModule,AlmacenesModule,
-    InventarioModule
+    InventarioModule,
+    AuthModule,
+    VentasModule
   ],
 
 })

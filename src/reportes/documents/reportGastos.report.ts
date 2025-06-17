@@ -6,8 +6,10 @@ const formatDate = (value: string | Date): string => {
 
     const date = new Date(value);
     if (isNaN(date.getTime())) {
-        return 'Fecha inválida'; // Maneja fechas incorrectas
+        return ''; // Maneja fechas incorrectas
     }
+
+    date.setDate(date.getDate() + 1);
 
     return date.toLocaleDateString('es-ES', {
         year: 'numeric',

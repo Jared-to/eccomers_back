@@ -85,7 +85,7 @@ export const billReport = (venta: Venta): TDocumentDefinitions => {
       {
         columns: [
           {
-            text: 'BlessBurguer',
+            text: 'LA RUTA 23',
             style: 'header',
             alignment: 'center',
           },

@@ -9,12 +9,16 @@ export class DetallePedido {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Producto, { eager: false })
+  @ManyToOne(() => Producto, { eager: false, nullable: true, onDelete: 'SET NULL', })
   @JoinColumn({ name: 'producto_id' })
   producto: Producto;
 
   @Column('text')
   variante: string;
+
+  @Column('text', { nullable: true })
+  nombreProduct: string;
+
 
   @Column('int')
   cantidad: number;

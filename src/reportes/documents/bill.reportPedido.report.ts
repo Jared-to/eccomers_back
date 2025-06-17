@@ -41,7 +41,7 @@ export const ReciboPedido = (pedido: Pedido): TDocumentDefinitions => {
   const ReciboPedido = (title: string): Content[] => [
     {
       columns: [
-        { image: 'src/images/blessBurguerLogo.png', width: 30, margin: [0, 0, 10, 0] },
+        { image: 'src/images/laruta23.png', width: 30, margin: [0, 0, 10, 0] },
         { text: title, style: 'header', alignment: 'center', width: '*' },
       ],
       margin: [0, 0, 0, 5],
@@ -104,7 +104,7 @@ export const ReciboPedido = (pedido: Pedido): TDocumentDefinitions => {
     pageSize: { width: 195, height: 'auto' },
     pageMargins: [10, 10, 10, 10],
     content: [
-      ...ReciboPedido('BlessBurguer'),
+      ...ReciboPedido('LA RUTA 23'),
     ] as Content[],
     styles: styles,
   };

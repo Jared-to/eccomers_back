@@ -129,7 +129,7 @@ export const billReports = (venta = ventaEjemplo): TDocumentDefinitions => {
     },
     content: [
       {
-        text: 'BlessBurger',//'Información de la Venta',
+        text: 'LA RUTA 23',//'Información de la Venta',
         style: 'subHeader',
         margin: [0, 10, 0, 5], // Separación superior e inferior
       },

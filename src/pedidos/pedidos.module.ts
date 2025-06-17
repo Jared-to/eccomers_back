@@ -10,6 +10,7 @@ import { VentasModule } from 'src/ventas/ventas.module';
 import { ClientesModule } from 'src/clientes/clientes.module';
 import { PedidoGateway } from './gateway/pedidos.gateway';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ProductosModule } from 'src/productos/productos.module';
 
 @Module({
   controllers: [PedidosController],
@@ -20,6 +21,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
     AuthModule,
     VentasModule,
     ClientesModule,
+    ProductosModule,
     EventEmitterModule.forRoot(), 
   ],
   exports: [PedidosService, TypeOrmModule]

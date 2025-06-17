@@ -6,21 +6,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Connection, DataSource, QueryRunner, Repository } from 'typeorm';
 import { Inventario } from 'src/inventario/entities/inventario.entity';
 import { Almacen } from 'src/almacenes/entities/almacen.entity';
-import { Cliente } from 'src/clientes/entities/cliente.entity';
 import { User } from 'src/auth/entities/user.entity';
-import { ClientesService } from 'src/clientes/clientes.service';
-import { CreateClienteDto } from 'src/clientes/dto/create-cliente.dto';
-import { plainToInstance } from 'class-transformer';
-import * as bcrypt from 'bcrypt';
-import { UpdateClienteDto } from 'src/clientes/dto/update-cliente.dto';
-import { validateOrReject } from 'class-validator';
-import { InventarioService } from 'src/inventario/inventario.service';
+
 import { Producto } from 'src/productos/entities/producto.entity';
-import { Proveedore } from 'src/proveedores/entities/proveedore.entity';
 import { Categoria } from 'src/categorias/entities/categoria.entity';
 import { inventarioInicial } from 'src/inventario/entities/inventario-inicial.entity';
 import { MovimientosAlmacenService } from 'src/inventario/service/movimientos-almacen.service';
 import { ProductosService } from 'src/productos/productos.service';
+import { Venta } from 'src/ventas/entities/venta.entity';
+import * as ExcelJS from 'exceljs';
 
 @Injectable()
 export class ExcelService {
@@ -191,16 +185,150 @@ export class ExcelService {
     }
   }
 
-
-
-
-
   async generarCodigoCliente(): Promise<string> {
     const codigoCliente = uuidv4();
     console.log(`Código Cliente Generado: ${codigoCliente}`);
     return codigoCliente;
   }
+  async generarReporteVentas(ventas: Venta[]) {
+    const fechaHoy = new Date().toISOString().split('T')[0];
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Reporte Ventas');
 
+    const estiloTitulo = {
+      font: { bold: true, size: 16, color: { argb: 'FFFFFFFF' } },
+      fill: {
+        type: 'pattern' as const,
+        pattern: 'solid' as const,
+        fgColor: { argb: '4F81BD' }
+      },
+      alignment: {
+        horizontal: 'center' as ExcelJS.Alignment['horizontal'],
+        vertical: 'middle' as ExcelJS.Alignment['vertical']
+      }
+    };
+
+    const estiloTotal = {
+      font: { bold: true, size: 12 },
+      fill: {
+        type: 'pattern' as const,
+        pattern: 'solid' as const,
+        fgColor: { argb: 'C6EFCE' }
+      },
+      alignment: {
+        horizontal: 'center' as ExcelJS.Alignment['horizontal'],
+        vertical: 'middle' as ExcelJS.Alignment['vertical']
+      }
+    };
+
+    const estiloEncabezado = {
+      font: { bold: true, color: { argb: 'FFFFFFFF' } },
+      fill: {
+        type: 'pattern' as const,
+        pattern: 'solid' as const,
+        fgColor: { argb: '4F81BD' }
+      },
+      alignment: {
+        horizontal: 'center' as ExcelJS.Alignment['horizontal'],
+        vertical: 'middle' as ExcelJS.Alignment['vertical']
+      },
+      border: {
+        top: { style: 'thin' as ExcelJS.BorderStyle },
+        bottom: { style: 'thin' as ExcelJS.BorderStyle },
+        left: { style: 'thin' as ExcelJS.BorderStyle },
+        right: { style: 'thin' as ExcelJS.BorderStyle }
+      }
+    };
+
+    const estiloDato = {
+      border: {
+        top: { style: 'thin' as ExcelJS.BorderStyle },
+        bottom: { style: 'thin' as ExcelJS.BorderStyle },
+        left: { style: 'thin' as ExcelJS.BorderStyle },
+        right: { style: 'thin' as ExcelJS.BorderStyle }
+      },
+      alignment: {
+        vertical: 'middle' as ExcelJS.Alignment['vertical']
+      }
+    };
+
+    // Título
+    worksheet.mergeCells('A1:H1');
+    worksheet.getCell('A1').value = `REPORTE DE VENTAS - Fecha: ${fechaHoy}`;
+    worksheet.getCell('A1').style = estiloTitulo;
+
+    // Total de ventas
+    // Total de ventas
+    const totalVentas = ventas.reduce((sum, v) => sum + v.subtotal, 0);
+    worksheet.mergeCells('A3:H3');
+    worksheet.getCell('A3').value = `Total de Ventas: Bs. ${totalVentas.toFixed(2)}`;
+    worksheet.getCell('A3').style = estiloTotal;
+
+    // Totales por método de pago
+    const totalQR = ventas
+      .filter((v) => v.tipo_pago.toLowerCase() === 'qr')
+      .reduce((sum, v) => sum + v.total, 0);
+
+    const totalEfectivo = ventas
+      .filter((v) => v.tipo_pago.toLowerCase() === 'efectivo')
+      .reduce((sum, v) => sum + v.total, 0);
+
+    // Fila: Total QR
+    worksheet.mergeCells('A4:H4');
+    worksheet.getCell('A4').value = `Total por QR: Bs. ${totalQR.toFixed(2)}`;
+    worksheet.getCell('A4').style = estiloTotal;
+
+    // Fila: Total Efectivo
+    worksheet.mergeCells('A5:H5');
+    worksheet.getCell('A5').value = `Total por Efectivo: Bs. ${totalEfectivo.toFixed(2)}`;
+    worksheet.getCell('A5').style = estiloTotal;
+
+
+    // Encabezados
+    const encabezados = [
+      '#', 'Fecha', 'Cliente', 'Vendedor', 'SubTotal', 'Descuento', 'Total', 'Método de Pago', 'Número de Venta'
+    ];
+    worksheet.addRow([]);
+    const encabezadoRow = worksheet.addRow(encabezados);
+    encabezadoRow.eachCell((cell) => {
+      cell.style = estiloEncabezado;
+    });
+
+    // Datos
+    ventas.forEach((venta, index) => {
+      const row = worksheet.addRow([
+        index + 1,
+        new Date(venta.fecha).toISOString().split('T')[0],
+        `${venta.cliente.nombre} ${venta.cliente.apellido}`,
+        venta.vendedor.fullName,
+        venta.subtotal,
+        venta.descuento || 0,
+        venta.total,
+        venta.tipo_pago,
+        venta.codigo
+      ]);
+      row.eachCell((cell) => {
+        cell.style = estiloDato;
+      });
+    });
+
+    // Ajuste de columnas
+    worksheet.columns = [
+      { width: 5 },
+      { width: 12 },
+      { width: 25 },
+      { width: 25 },
+      { width: 15 },
+      { width: 18 },
+      { width: 18 },
+      { width: 18 },
+    ];
+
+    const filePath = `./reporte_ventas_${fechaHoy}.xlsx`;
+    await workbook.xlsx.writeFile(filePath);
+
+    return filePath;
+  }
   obtenerIdDepAndNameAlmacen(cadena: string): { idDepartamento: number | null; almacenNombre: string } {
 
     const cadenaMinusculas = cadena.toLowerCase();
