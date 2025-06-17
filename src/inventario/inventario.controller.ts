@@ -41,7 +41,7 @@ export class InventarioController {
   traerProductosPublicos(@Param('almacen') almacen: string, @Param('categoria') categoria: string) {
     return this.inventarioService.obtenerProductosPorCategoriaYAlmacen(almacen, categoria)
   }
-  
+
   @Get('ajuste')
   @Auth(ValidRoles.admin, ValidRoles.user)
   traerAjustes() {
@@ -80,7 +80,11 @@ export class InventarioController {
   ) {
     return await this.inventarioService.obtenerProductoPorAlmacenYProducto(almacenId, productoId);
   }
-
+  @Get('stocks-bajos')
+  @Auth(ValidRoles.admin, ValidRoles.user)
+  async obtenerStocksBajos() {
+    return this.inventarioService.obtenerStocksBajos();
+  }
   @Get(':id')
   @Auth(ValidRoles.admin, ValidRoles.user)
   obtenerInfoProductoInv(@Param('id') id: string) {
@@ -111,5 +115,11 @@ export class InventarioController {
       fechaIn,
       fechaFn,
     );
+  }
+  @Get('movimientos/ultimos')
+  @Auth(ValidRoles.admin, ValidRoles.user)
+  async obtenerUltimosMovimientos(): Promise<MovimientoInventario[]> {
+    // Llamar al servicio para obtener los movimientos del producto
+    return this.movimientoInventarioService.obtenerUltimosMovimientos();
   }
 }

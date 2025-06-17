@@ -142,6 +142,12 @@ export class MovimientosAlmacenService {
     return movimientos;
   }
 
-
+  // Obtener todos los movimientos
+  async obtenerUltimosMovimientos(): Promise<MovimientoInventario[]> {    
+    return this.movimientoRepository.find({
+      order: { fecha: 'DESC' },
+      relations: ['product', 'product.categoria'], take: 5
+    });
+  }
 
 }

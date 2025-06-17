@@ -316,62 +316,6 @@ export class VentasService {
     }
   }
 
-
-  // async findAllDates(fechaInicio: string | 'xx', fechaFin: string | 'xx', user: User): Promise<Venta[]> {
-
-  //   const isAdmin = user.roles.some(role => role === 'admin');
-  //   // Si ambas fechas son 'xx', obtenemos todas las ventas
-  //   if (fechaInicio === 'xx' && fechaFin === 'xx') {
-
-  //     return this.ventasRepository.find({
-  //       where: isAdmin ? {} : { vendedor: { id: user.id } },
-  //       relations: ['detalles', 'detalles.producto', 'almacen', 'cliente', 'vendedor', 'caja'],
-  //     });
-
-  //   }
-
-  //   // Normalizamos las fechas a medianoche para ignorar horas
-  //   const normalizeDate = (date: string) => {
-  //     const d = new Date(date);
-  //     d.setHours(0, 0, 0, 0); // Establecemos la hora a medianoche
-  //     return d;
-  //   };
-
-  //   const fechaInicioNormalizada = normalizeDate(fechaInicio);
-  //   const fechaFinNormalizada = normalizeDate(fechaFin);
-
-
-  //   // Si la fecha final es hoy, ajustamos para obtener hasta el final del día (23:59:59)
-  //   if (fechaFin === fechaInicio) {
-  //     fechaFinNormalizada.setHours(23, 59, 59, 999); // Fin del día (23:59:59)
-  //   }
-
-
-  //   const whereConditions: any = {};
-
-  //   if (!isAdmin) {
-  //     whereConditions.vendedor = { id: user.id };
-  //   }
-  //   // Filtrar por rango de fechas si ambas fechas son proporcionadas
-  //   if (fechaInicio && fechaFin) {
-  //     whereConditions.fecha = Between(fechaInicioNormalizada, fechaFinNormalizada);
-  //   } else if (fechaInicio) {
-  //     whereConditions.fecha = { $gte: fechaInicioNormalizada };
-  //   } else if (fechaFin) {
-  //     whereConditions.fecha = { $lte: fechaFinNormalizada };
-  //   }
-
-  //   const ventas = await this.ventasRepository.find({
-  //     where: whereConditions,
-  //     relations: ['detalles', 'detalles.producto', 'almacen', 'cliente', 'vendedor', 'caja'],
-  //   });
-  //   console.log("findAllDates "+fechaInicio);
-  //   console.log("findAllDates "+fechaFin);
-  //   console.log("ventas: "+ventas);
-
-  //   return ventas;
-  // }
-
   //CODIGO MODIFICADO
   async findAllDates(fechaInicio: string | 'xx', fechaFin: string | 'xx', user: User): Promise<Venta[]> {
     const isAdmin = user.roles.some(role => role === 'admin');
@@ -429,6 +373,77 @@ export class VentasService {
       console.error("Error en findAllDates:", error.message);
       return [];
     }
+  }
+  async obtenerDatosVentas(tipo: 'semana' | 'mes' | 'todo') {
+    const today = new Date();
+    let pData: number[] = [];
+    let xLabels: string[] = [];
+
+    if (tipo === 'semana') {
+      const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+      const lunes = new Date(today);
+      lunes.setDate(today.getDate() - today.getDay() + 1); // lunes de esta semana
+
+      for (let i = 0; i < 7; i++) {
+        const fechaInicio = new Date(lunes);
+        fechaInicio.setDate(lunes.getDate() + i);
+
+        const fechaFin = new Date(fechaInicio);
+        fechaFin.setDate(fechaInicio.getDate() + 1);
+
+        const cantidad = await this.ventasRepository.count({
+          where: {
+            fecha: Between(fechaInicio, fechaFin),
+          },
+        });
+
+        pData.push(cantidad);
+      }
+
+      xLabels = dias;
+    }
+
+    if (tipo === 'mes') {
+      const year = today.getFullYear();
+      const month = today.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      for (let i = 1; i <= daysInMonth; i++) {
+        const fechaInicio = new Date(year, month, i);
+        const fechaFin = new Date(year, month, i + 1);
+
+        const cantidad = await this.ventasRepository.count({
+          where: {
+            fecha: Between(fechaInicio, fechaFin),
+          },
+        });
+
+        pData.push(cantidad);
+        xLabels.push(i.toString());
+      }
+    }
+
+    if (tipo === 'todo') {
+      const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      const year = today.getFullYear();
+
+      for (let m = 0; m < 12; m++) {
+        const fechaInicio = new Date(year, m, 1);
+        const fechaFin = new Date(year, m + 1, 1);
+
+        const cantidad = await this.ventasRepository.count({
+          where: {
+            fecha: Between(fechaInicio, fechaFin),
+          },
+        });
+
+        pData.push(cantidad);
+      }
+
+      xLabels = meses;
+    }
+
+    return { pData, xLabels };
   }
 
 

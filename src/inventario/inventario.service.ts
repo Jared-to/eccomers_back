@@ -1,6 +1,6 @@
 import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { QueryRunner, Repository } from 'typeorm';
+import { Between, QueryRunner, Repository } from 'typeorm';
 
 import { CreateInventarioDto } from './dto/create-inventario.dto';
 import { Inventario } from './entities/inventario.entity';
@@ -501,5 +501,13 @@ export class InventarioService {
 
   }
 
+  async obtenerStocksBajos(): Promise<Inventario[]> {
+    const inventario = await this.inventarioRepository.find({
+      where: { stock: Between(1, 9), }, //stock<10 
+      order: { stock: 'ASC' },
+      relations: ['product'],
+    });
 
+    return inventario;
+  }
 }
