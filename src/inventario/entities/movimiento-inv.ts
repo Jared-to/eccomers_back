@@ -19,6 +19,7 @@ export class MovimientoInventario {
   )
   product: Producto;
 
+
   @Column('text')
   tipo: string;
 

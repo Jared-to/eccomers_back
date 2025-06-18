@@ -11,7 +11,6 @@ import { Cliente } from 'src/clientes/entities/cliente.entity';
 import { Producto } from 'src/productos/entities/producto.entity';
 import * as moment from 'moment-timezone';
 
-import { AuthService } from 'src/auth/auth.service';
 import { User } from 'src/auth/entities/user.entity';
 import { VarianteProducto } from 'src/productos/entities/varianteProducto.entity';
 import { DescuentosService } from 'src/descuentos/descuentos.service';
@@ -615,7 +614,7 @@ export class VentasService {
   private async guardarDetallesVenta(queryRunner, detalles: CreateDetalleVentaDto[], venta: Venta): Promise<void> {
 
     for (const detalle of detalles) {
-      const producto = await this.productoRepository.findOne({ where: { id: detalle.id_producto } });
+      const producto = await this.productoRepository.findOne({ where: { id: detalle.id_producto }, relations: ['categoria'] });
       const variant = await this.varianteRepository.findOne({ where: { nombre: detalle.nombreVariante, producto: { id: detalle.id_producto } } });
       if (!producto || !variant) {
         throw new NotFoundException('Producto  no encontrado');
@@ -627,6 +626,12 @@ export class VentasService {
         nombreProducto: producto.alias,
         nombreVariante: variant.nombre,
         venta,
+        producto_snapshot: {
+          nombre: producto.alias,
+          descripcion: producto.descripcion,
+          codigo: producto.codigo,
+          categoria: producto.categoria?.nombre,
+        },
       });
       await queryRunner.manager.save(DetalleVenta, detalleVenta);
     }

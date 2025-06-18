@@ -11,10 +11,10 @@ export class DetalleAjuste {
   @JoinColumn({ name: 'ajuste_inventario_id' })
   ajuste_inventario: AjusteInventario;
 
-  @Column('uuid')
+  @Column('uuid',{nullable:true})
   producto_id: string;
 
-  @ManyToOne(() => Producto, { eager: false })
+  @ManyToOne(() => Producto, { eager: false, nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'producto_id' })
   producto: Producto;
 
@@ -27,7 +27,9 @@ export class DetalleAjuste {
   @Column('text')
   tipo: string;
 
+  @Column({ type: 'jsonb', nullable: true })
+  producto_snapshot?: Record<string, any>;
+
   // Campo transitorio para el stock
   stock?: number;
 }
-

@@ -49,7 +49,12 @@ export class PedidosService {
       const detalle = await this.detallePedidoRepository.create({
         ...element,
         producto: { id: element.productoId },
-        nombreProduct: producto.alias,
+        producto_snapshot: {
+          nombre: producto.alias,
+          descripcion: producto.descripcion,
+          codigo: producto.codigo,
+          categoria: producto.categoria?.nombre,
+        },
         pedido: { id: pedidoG.id },
       })
       await this.detallePedidoRepository.save(detalle)

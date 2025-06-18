@@ -16,9 +16,8 @@ export class DetallePedido {
   @Column('text')
   variante: string;
 
-  @Column('text', { nullable: true })
-  nombreProduct: string;
-
+  @Column({ type: 'jsonb', nullable: true })
+  producto_snapshot?: Record<string, any>;
 
   @Column('int')
   cantidad: number;

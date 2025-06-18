@@ -1,12 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { QueryRunner, Repository } from 'typeorm';
 import { MovimientosAlmacenService } from './movimientos-almacen.service';
 import { CreateAjusteInventarioDto, CreateDetalleAjusteDto } from '../dto/ajuste-inventario.dto';
 import { AjusteInventario } from '../entities/ajustes-inventario.entity';
 import { DetalleAjuste } from '../entities/detalle-ajuste.entity';
 import { InventarioService } from '../inventario.service';
 import { DataSource } from 'typeorm';
+import { Producto } from 'src/productos/entities/producto.entity';
 
 @Injectable()
 export class AjustesInventario {
@@ -54,25 +55,30 @@ export class AjustesInventario {
       await queryRunner.manager.save(savedAjuste);
 
       // Crear y guardar los detalles asociados
-      const detallesToSave = detalles.map((detalleDto) => {
-        return this.detalleAjusteRepository.create({
+      for (const detalleDto of detalles) {
+        const producto = await queryRunner.manager.findOne(Producto, { where: { id: detalleDto.producto_id } });
+        const detallesToSave = this.detalleAjusteRepository.create({
           ajuste_inventario: savedAjuste,
           producto_id: detalleDto.producto_id,
           cantidad: detalleDto.cantidad,
           unidad_medida: detalleDto.unidad_medida,
           tipo: detalleDto.tipo,
+          producto_snapshot: {
+            nombre: producto.alias,
+            descripcion: producto.descripcion,
+            codigo: producto.codigo,
+          },
         });
-      });
 
-      // Guardar los detalles dentro de la transacción
-      await queryRunner.manager.save(detallesToSave);
+        // Guardar los detalles dentro de la transacción
+        await queryRunner.manager.save(detallesToSave);
+      }
 
       // Registrar registro de ingreso o salida
-      await Promise.all(
-        detalles.map((detalle) =>
-          this.registrarMovimiento(almacen_id, detalle),
-        ),
-      );
+      for (const detalle of detalles) {
+        await this.registrarMovimiento(almacen_id, detalle, queryRunner);
+      }
+
 
       // Confirmar la transacción
       await queryRunner.commitTransaction();
@@ -94,181 +100,195 @@ export class AjustesInventario {
 
 
   async updateAjuste(id: string, updateDto: CreateAjusteInventarioDto): Promise<AjusteInventario> {
-    const { almacen_id, fecha, glosa, detalles, id_usuario } = updateDto;
 
-    // Verificar si el ajuste existe
-    const existingAjuste = await this.ajusteInventarioRepository.findOne({
-      where: { id },
-      relations: ['detalles'],
-    });
+    // Iniciar la transacción
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
 
-    if (!existingAjuste) {
-      throw new NotFoundException(`El ajuste con ID "${id}" no fue encontrado.`);
-    }
+      const { almacen_id, fecha, glosa, detalles, id_usuario } = updateDto;
 
-    const movimientosPendientes = [];
+      // Verificar si el ajuste existe
+      const existingAjuste = await this.ajusteInventarioRepository.findOne({
+        where: { id },
+        relations: ['detalles'],
+      });
 
-    for (const detalleExistente of existingAjuste.detalles) {
-      const detalleActualizado = detalles.find(
-        (detalle) => detalle.producto_id === detalleExistente.producto_id
-      );
+      if (!existingAjuste) {
+        throw new NotFoundException(`El ajuste con ID "${id}" no fue encontrado.`);
+      }
 
-      if (detalleActualizado) {
-        // Verificar si el tipo cambió
-        if (detalleExistente.tipo !== detalleActualizado.tipo) {
-          // Revertir la operación anterior
-          if (detalleExistente.tipo === 'incrementar') {
-            // Revertir incremento: Restar la cantidad original
-            movimientosPendientes.push(
-              this.inventarioService.descontarStock({
+
+      for (const detalleExistente of existingAjuste.detalles) {
+        const detalleActualizado = detalles.find(
+          (detalle) => detalle.producto_id === detalleExistente.producto_id
+        );
+
+        if (detalleActualizado) {
+          // Verificar si el tipo cambió
+          if (detalleExistente.tipo !== detalleActualizado.tipo) {
+            // Revertir la operación anterior
+            if (detalleExistente.tipo === 'incrementar') {
+              // Revertir incremento: Restar la cantidad original
+
+              await this.inventarioService.descontarStockTransactional({
                 almacenId: almacen_id,
                 cantidad: detalleExistente.cantidad,
                 productoId: detalleExistente.producto_id,
-              })
-            );
-          } else if (detalleExistente.tipo === 'decrementar') {
-            // Revertir decremento: Sumar la cantidad original
-            movimientosPendientes.push(
-              this.inventarioService.agregarStock({
+              }, queryRunner)
+
+            } else if (detalleExistente.tipo === 'decrementar') {
+              // Revertir decremento: Sumar la cantidad original
+              await this.inventarioService.agregarStockTransactional({
                 almacenId: almacen_id,
                 cantidad: detalleExistente.cantidad,
                 productoId: detalleExistente.producto_id,
-              })
-            );
-          }
+              }, queryRunner)
 
-          // Aplicar la nueva operación
-          if (detalleActualizado.tipo === 'incrementar') {
+            }
 
-            movimientosPendientes.push(
-              this.inventarioService.agregarStock({
+            // Aplicar la nueva operación
+            if (detalleActualizado.tipo === 'incrementar') {
+              await this.inventarioService.agregarStockTransactional({
                 almacenId: almacen_id,
                 cantidad: detalleActualizado.cantidad + detalleExistente.cantidad,
                 productoId: detalleActualizado.producto_id,
-              })
-            );
-            movimientosPendientes.push(
-              this.movimientosService.registrarIngreso({
+              }, queryRunner)
+
+
+              await this.movimientosService.registrarIngresoTransaccion({
                 almacenId: almacen_id,
                 cantidad: detalleActualizado.cantidad + detalleExistente.cantidad,
                 productoId: detalleActualizado.producto_id,
                 descripcion: 'Editar ajuste',
-              })
-            );
-          } else if (detalleActualizado.tipo === 'decrementar') {
-            movimientosPendientes.push(
-              this.inventarioService.descontarStock({
+              }, queryRunner)
+
+            } else if (detalleActualizado.tipo === 'decrementar') {
+
+              await this.inventarioService.descontarStockTransactional({
                 almacenId: almacen_id,
                 cantidad: detalleActualizado.cantidad + detalleExistente.cantidad,
                 productoId: detalleActualizado.producto_id,
-              })
-            );
-            movimientosPendientes.push(
-              this.movimientosService.registrarSalida({
+              }, queryRunner)
+
+
+              await this.movimientosService.registrarSalidaTransaccion({
                 almacenId: almacen_id,
                 cantidad: detalleActualizado.cantidad + detalleExistente.cantidad,
                 productoId: detalleActualizado.producto_id,
                 descripcion: 'Editar ajuste',
-              })
-            );
-          }
-        } else {
-          // Si el tipo no cambió, verificar si la cantidad cambió
-          const diferenciaCantidad = detalleExistente.cantidad - detalleActualizado.cantidad;
-          console.log('cantidad diferencia' + diferenciaCantidad);
+              }, queryRunner)
+
+            }
+          } else {
+            // Si el tipo no cambió, verificar si la cantidad cambió
+            const diferenciaCantidad = detalleExistente.cantidad - detalleActualizado.cantidad;
+            console.log('cantidad diferencia' + diferenciaCantidad);
 
 
-          if (diferenciaCantidad !== 0) {
-            if (diferenciaCantidad > 0) {
-              movimientosPendientes.push(
-                this.inventarioService.agregarStock({
+            if (diferenciaCantidad !== 0) {
+              if (diferenciaCantidad > 0) {
+
+                await this.inventarioService.agregarStockTransactional({
                   almacenId: almacen_id,
                   cantidad: diferenciaCantidad,
                   productoId: detalleActualizado.producto_id,
-                })
-              );
-              movimientosPendientes.push(
-                this.movimientosService.registrarIngreso({
+                }, queryRunner)
+
+
+                await this.movimientosService.registrarIngresoTransaccion({
                   almacenId: almacen_id,
                   cantidad: diferenciaCantidad,
                   productoId: detalleActualizado.producto_id,
                   descripcion: 'Ajuste Editado',
-                })
-              );
-            } else {
-              const cantidadARetirar = Math.abs(diferenciaCantidad);
-              console.log(cantidadARetirar);
+                }, queryRunner)
 
-              movimientosPendientes.push(
-                this.inventarioService.descontarStock({
+              } else {
+                const cantidadARetirar = Math.abs(diferenciaCantidad);
+                console.log(cantidadARetirar);
+
+                await this.inventarioService.descontarStockTransactional({
                   almacenId: almacen_id,
                   cantidad: cantidadARetirar,
                   productoId: detalleActualizado.producto_id,
-                })
-              );
-              movimientosPendientes.push(
-                this.movimientosService.registrarSalida({
+                }, queryRunner)
+
+
+                await this.movimientosService.registrarSalidaTransaccion({
                   almacenId: almacen_id,
                   cantidad: cantidadARetirar,
                   productoId: detalleActualizado.producto_id,
                   descripcion: 'Ajuste Editado',
-                })
-              );
+                }, queryRunner)
+
+              }
             }
           }
-        }
 
-        // **ACTUALIZA EL DETALLE EN LA BASE DE DATOS**
-        detalleExistente.cantidad = detalleActualizado.cantidad;
-        detalleExistente.unidad_medida = detalleActualizado.unidad_medida;
-        detalleExistente.tipo = detalleActualizado.tipo;
+          // **ACTUALIZA EL DETALLE EN LA BASE DE DATOS**
+          detalleExistente.cantidad = detalleActualizado.cantidad;
+          detalleExistente.unidad_medida = detalleActualizado.unidad_medida;
+          detalleExistente.tipo = detalleActualizado.tipo;
 
-        // Guarda el detalle actualizado
-        await this.detalleAjusteRepository.save(detalleExistente);
-      } else {
-        // Eliminar detalles faltantes
-        movimientosPendientes.push(
-          this.inventarioService.descontarStock({
+          // Guarda el detalle actualizado
+          await this.detalleAjusteRepository.save(detalleExistente);
+        } else {
+          // Eliminar detalles faltantes
+          await this.inventarioService.descontarStockTransactional({
             almacenId: almacen_id,
             cantidad: detalleExistente.cantidad,
             productoId: detalleExistente.producto_id,
+          }, queryRunner)
+
+          await this.detalleAjusteRepository.delete(detalleExistente.id);
+        }
+      }
+
+      // Agregar nuevos detalles
+      const nuevosDetalles = detalles.filter(
+        (detalle) => !existingAjuste.detalles.some((d) => d.producto_id === detalle.producto_id)
+      );
+
+      for (const nuevoDetalle of nuevosDetalles) {
+        const producto = await queryRunner.manager.findOne(Producto, { where: { id: nuevoDetalle.producto_id } })
+        await this.detalleAjusteRepository.save(
+          this.detalleAjusteRepository.create({
+            ajuste_inventario: existingAjuste,
+            producto_id: nuevoDetalle.producto_id,
+            cantidad: nuevoDetalle.cantidad,
+            unidad_medida: nuevoDetalle.unidad_medida,
+            tipo: nuevoDetalle.tipo,
+            producto_snapshot: {
+              nombre: producto.alias,
+              descripcion: producto.descripcion,
+              codigo: producto.codigo,
+            },
           })
         );
-        await this.detalleAjusteRepository.delete(detalleExistente.id);
       }
+
+
+      // Actualizar el ajuste principal
+      existingAjuste.glosa = glosa;
+      existingAjuste.fecha = fecha;
+      existingAjuste.id_usuario = id_usuario;
+
+      await this.ajusteInventarioRepository.save(existingAjuste);
+
+      return this.ajusteInventarioRepository.findOne({
+        where: { id },
+        relations: ['detalles'],
+      });
+    } catch (error) {
+
+      // Revertir la transacción en caso de error
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      // Liberar el queryRunner
+      await queryRunner.release();
     }
-
-    // Agregar nuevos detalles
-    const nuevosDetalles = detalles.filter(
-      (detalle) => !existingAjuste.detalles.some((d) => d.producto_id === detalle.producto_id)
-    );
-
-    for (const nuevoDetalle of nuevosDetalles) {
-      await this.detalleAjusteRepository.save(
-        this.detalleAjusteRepository.create({
-          ajuste_inventario: existingAjuste,
-          producto_id: nuevoDetalle.producto_id,
-          cantidad: nuevoDetalle.cantidad,
-          unidad_medida: nuevoDetalle.unidad_medida,
-          tipo: nuevoDetalle.tipo,
-        })
-      );
-    }
-
-    // Esperar todos los movimientos
-    await Promise.all(movimientosPendientes);
-
-    // Actualizar el ajuste principal
-    existingAjuste.glosa = glosa;
-    existingAjuste.fecha = fecha;
-    existingAjuste.id_usuario = id_usuario;
-
-    await this.ajusteInventarioRepository.save(existingAjuste);
-
-    return this.ajusteInventarioRepository.findOne({
-      where: { id },
-      relations: ['detalles'],
-    });
   }
 
 
@@ -338,6 +358,7 @@ export class AjustesInventario {
         'detalle.id',
         'detalle.cantidad',
         'detalle.unidad_medida',
+        'detalle.producto_snapshot',
         'detalle.tipo',
         'producto.id',
         'producto.alias',
@@ -370,19 +391,23 @@ export class AjustesInventario {
       },
       detalles: entity.detalles.map((detalle, index) => ({
         id: detalle.id,
-        id_producto: detalle.producto.id,
-        alias: detalle.producto.alias,
+        id_producto: detalle?.producto?.id,
+        alias: detalle?.producto?.alias || detalle.producto_snapshot.nombre,
         cantidad: detalle.cantidad,
-        codigo: detalle.producto.codigo,
+        codigo: detalle?.producto?.codigo || detalle.producto_snapshot.codigo,
         unidad_medida: detalle.unidad_medida,
-        descripcion: detalle.producto.descripcion,
+        descripcion: detalle?.producto?.descripcion || detalle.producto_snapshot.descripcion,
         tipo: detalle.tipo,
-        sku: detalle.producto.sku,
+        sku: detalle?.producto?.sku || 'N/A',
         stock: ajuste.raw[index]?.detalle_stock || 0,
       })),
     };
   }
   async deleteAjuste(id: string): Promise<void> {
+    // Iniciar la transacción
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
     // Verificar si el ajuste existe
     const existingAjuste = await this.ajusteInventarioRepository.findOne({
       where: { id },
@@ -392,47 +417,51 @@ export class AjustesInventario {
     if (!existingAjuste) {
       throw new NotFoundException(`El ajuste con ID "${id}" no fue encontrado.`);
     }
+    try {
+      // Revertir el impacto de los detalles en el inventario
+      for (const detalle of existingAjuste.detalles) {
+        if (detalle.tipo === 'incrementar') {
+          // Si se incrementó, restar del stock
 
-    const movimientosPendientes = [];
-
-    // Revertir el impacto de los detalles en el inventario
-    for (const detalle of existingAjuste.detalles) {
-      if (detalle.tipo === 'incrementar') {
-        // Si se incrementó, restar del stock
-        movimientosPendientes.push(
-          this.inventarioService.descontarStock({
+          await this.inventarioService.descontarStockTransactional({
             almacenId: existingAjuste.almacen_id,
             cantidad: detalle.cantidad,
             productoId: detalle.producto_id,
-          })
-        );
-        await this.movimientosService.registrarSalida({
-          almacenId: existingAjuste.almacen_id,
-          cantidad: detalle.cantidad,
-          productoId: detalle.producto_id,
-          descripcion: 'Ajuste Eliminado',
-        });
-      } else if (detalle.tipo === 'decrementar') {
-        // Si se decrementó, sumar al stock
-        movimientosPendientes.push(
-          this.inventarioService.agregarStock({
+          }, queryRunner)
+
+          await this.movimientosService.registrarSalidaTransaccion({
             almacenId: existingAjuste.almacen_id,
             cantidad: detalle.cantidad,
             productoId: detalle.producto_id,
-          })
-        );
+            descripcion: 'Ajuste Eliminado',
+          }, queryRunner);
+        } else if (detalle.tipo === 'decrementar') {
+          // Si se decrementó, sumar al stock
 
-        await this.movimientosService.registrarIngreso({
-          almacenId: existingAjuste.almacen_id,
-          cantidad: detalle.cantidad,
-          productoId: detalle.producto_id,
-          descripcion: 'Ajuste eliminado.',
-        });
+          await this.inventarioService.agregarStockTransactional({
+            almacenId: existingAjuste.almacen_id,
+            cantidad: detalle.cantidad,
+            productoId: detalle.producto_id,
+          }, queryRunner)
+
+
+          await this.movimientosService.registrarIngresoTransaccion({
+            almacenId: existingAjuste.almacen_id,
+            cantidad: detalle.cantidad,
+            productoId: detalle.producto_id,
+            descripcion: 'Ajuste eliminado.',
+          }, queryRunner);
+        }
       }
-    }
+    } catch (error) {
 
-    // Esperar a que todos los movimientos se procesen
-    await Promise.all(movimientosPendientes);
+      // Revertir la transacción en caso de error
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      // Liberar el queryRunner
+      await queryRunner.release();
+    }
 
     // Eliminar los detalles del ajuste
     await this.detalleAjusteRepository.delete({ ajuste_inventario: { id } });
@@ -441,34 +470,34 @@ export class AjustesInventario {
     await this.ajusteInventarioRepository.delete(id);
   }
 
-  private async registrarMovimiento(almacen_id: string, detalle: CreateDetalleAjusteDto): Promise<void> {
+  private async registrarMovimiento(almacen_id: string, detalle: CreateDetalleAjusteDto, queryRunner: QueryRunner): Promise<void> {
     if (detalle.tipo === 'incrementar') {
 
-      await this.inventarioService.agregarStock({
+      await this.inventarioService.agregarStockTransactional({
         almacenId: almacen_id,
         cantidad: detalle.cantidad,
-        productoId: detalle.producto_id
-      })
+        productoId: detalle.producto_id,
+      }, queryRunner)
 
-      await this.movimientosService.registrarIngreso({
+      await this.movimientosService.registrarIngresoTransaccion({
         almacenId: almacen_id,
         cantidad: detalle.cantidad,
         productoId: detalle.producto_id,
         descripcion: 'Ajuste',
-      });
+      }, queryRunner);
     } else {
 
-      await this.inventarioService.descontarStock({
+      await this.inventarioService.descontarStockTransactional({
         almacenId: almacen_id,
         cantidad: detalle.cantidad,
         productoId: detalle.producto_id,
-      })
-      await this.movimientosService.registrarSalida({
+      }, queryRunner)
+      await this.movimientosService.registrarSalidaTransaccion({
         almacenId: almacen_id,
         cantidad: detalle.cantidad,
         productoId: detalle.producto_id,
         descripcion: 'Ajuste',
-      });
+      }, queryRunner);
     }
   }
 

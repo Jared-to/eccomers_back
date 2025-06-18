@@ -16,7 +16,9 @@ export class DetalleVenta {
   @JoinColumn({ name: 'venta_id' })  // Asegúrate de que 'venta_id' sea el nombre correcto de la columna
   venta: Venta;
 
-
+  @Column({ type: 'jsonb', nullable: true })
+  producto_snapshot?: Record<string, any>;
+  
   @ManyToOne(() => Producto, { eager: false, nullable: true, onDelete: 'SET NULL', })
   @JoinColumn({ name: 'producto_id' })
   producto: Producto;
