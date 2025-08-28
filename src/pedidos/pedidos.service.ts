@@ -11,6 +11,7 @@ import { ClientesService } from 'src/clientes/clientes.service';
 import { VentasService } from 'src/ventas/ventas.service';
 import * as moment from 'moment-timezone';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { QrGenerados } from 'src/ventas/entities/qr-generados.entity';
 
 @Injectable()
 export class PedidosService {
@@ -24,22 +25,21 @@ export class PedidosService {
     private readonly clientesService: ClientesService,
     private readonly ventasService: VentasService,
     private readonly eventEmitter: EventEmitter2,
+    @InjectRepository(QrGenerados)
+    private readonly qrGeneradosRepository: Repository<QrGenerados>,
   ) { }
-  async solicitudPedido(createPedidoDto: CreatePedidoDto, file?: Express.Multer.File) {
+  async solicitudPedido(createPedidoDto: CreatePedidoDto) {
+    const { idQR, ...createPedido } = createPedidoDto
     const direccionGps = createPedidoDto.dir_gps ? JSON.parse(createPedidoDto.dir_gps) : null;
     const detalles = JSON.parse(createPedidoDto.detalles);
 
     const pedido = await this.pedidoRepository.create({
-      ...createPedidoDto,
+      ...createPedido,
       dir_gps: direccionGps,
       fechaPedido: moment().tz("America/La_Paz").format("YYYY-MM-DD HH:mm:ss"),
       almacen: { id: createPedidoDto.sucursal }
     })
-    if (file) {
-      // Subir imágenes a Cloudinary
-      const uploadPromises = await this.cloudinaryService.uploadFile(file);
-      pedido.fotoRecibo = uploadPromises.secure_url;
-    }
+
     const pedidoG = await this.pedidoRepository.save(pedido);
     //detalles del pedido
     for (const element of detalles) {
@@ -57,7 +57,18 @@ export class PedidosService {
 
     pedidoG.codigo = nuevoCodigo;
 
-    await this.pedidoRepository.save(pedidoG)
+    const pedidoGuardado = await this.pedidoRepository.save(pedidoG);
+    //Si el tipo de pago fue en QR
+    if (pedidoG.metodoPago === 'QR') {
+      //buscar registro
+      const registro = await this.qrGeneradosRepository.findOne({ where: { idQR: idQR } });
+
+      registro.pedido = pedidoGuardado
+
+      await this.qrGeneradosRepository.save(registro);
+    }
+
+
 
     // Emitir evento para actualizar la cantidad de pedidos pendientes
     this.eventEmitter.emit('pedido.creado', pedidoG);
@@ -159,11 +170,13 @@ export class PedidosService {
       relations: ['almacen', 'detalles', 'detalles.producto', 'usuario', 'venta']
     })
   }
-  async pedidoVenta(id: string, cajaId: string, user: string, metodoPago: string) {
+
+
+  async pedidoVenta(id: string, cajaId: string, user: string, metodoPago: string, idQr?: string) {
     const pedido = await this.pedidoRepository.findOne(
       {
         where: { id },
-        relations: ['almacen', 'detalles', 'detalles.producto']
+        relations: ['almacen', 'detalles', 'detalles.producto', 'qr']
       }
     )
     //1er buscar cliente por el nombre y apellido si no se encuentra se crea uno nuevo 
@@ -200,6 +213,13 @@ export class PedidosService {
       montoRecibido: pedido.total,
       glosa: pedido.glosa,
       detalles
+    }
+    if (metodoPago === 'QR') {
+      if (pedido.metodoPago === 'EFECTIVO') {
+        venta.idQR = idQr;
+      } else {
+        venta.idQR = pedido.qr.id
+      }
     }
 
     //3: Crear la venta

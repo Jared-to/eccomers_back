@@ -2,10 +2,6 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, Upl
 import { PedidosService } from './pedidos.service';
 import { CreatePedidoDto } from './dto/create-pedido.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Auth } from 'src/auth/decorators/auth.decorator';
-import { ValidRoles } from 'src/auth/interface/valid-roles';
-import { GetUser } from 'src/auth/decorators/get-user.decorator';
-import { User } from 'src/auth/entities/user.entity';
 
 @Controller('pedidos')
 export class PedidosController {
@@ -15,10 +11,9 @@ export class PedidosController {
   @UseInterceptors(FileInterceptor('file'))
   create(
     @Body() createPedidoDto: any,
-    @UploadedFile() file?: Express.Multer.File,
   ) {
 
-    return this.pedidosService.solicitudPedido(createPedidoDto, file || null);
+    return this.pedidosService.solicitudPedido(createPedidoDto,);
   }
 
   @Get()
@@ -58,9 +53,9 @@ export class PedidosController {
     return this.pedidosService.reanudarPedido(id, user);
   }
 
-  @Post('confirmar/:id/:id_caja/:user/:metodo_pago')
-  confirmarPedido(@Param('id') id: string, @Param('id_caja') caja: string, @Param('user') user: string, @Param('metodo_pago') metodoPago: string,) {
-    return this.pedidosService.pedidoVenta(id, caja, user, metodoPago);
+  @Post('confirmar/:id/:id_caja/:user/:metodo_pago/:idQR')
+  confirmarPedido(@Param('id') id: string, @Param('id_caja') caja: string, @Param('user') user: string, @Param('metodo_pago') metodoPago: string,@Param('idQR') idQR: string,) {
+    return this.pedidosService.pedidoVenta(id, caja, user, metodoPago,idQR);
   }
 
   @Delete('/:id')

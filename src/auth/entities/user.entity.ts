@@ -40,6 +40,12 @@ export class User {
   @Column('text', { nullable: true })
   foto: string;
 
+  @Column({
+    type: 'text',
+    nullable: true
+  })
+  tokenQR: string;
+
   // Relación ManyToOne: Un usuario pertenece a un solo almacén
   @ManyToOne(() => Almacen, almacen => almacen.usuarios, { nullable: true })
   almacen: Almacen;

@@ -1,10 +1,11 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 import { DetalleVenta } from "./detalle-venta.entity";
 import { Cliente } from "src/clientes/entities/cliente.entity";
 import { Caja } from "src/cajas/entities/caja.entity";
 import { User } from "src/auth/entities/user.entity";
 import { Almacen } from "src/almacenes/entities/almacen.entity";
 import { Descuento } from "src/descuentos/entities/descuento.entity";
+import { QrGenerados } from "./qr-generados.entity";
 
 @Entity('ventas')
 export class Venta {
@@ -50,6 +51,12 @@ export class Venta {
   @Column('float')
   total: number;
 
+  @Column('float', { nullable: true })
+  montoQR: number;
+
+  @Column('float', { nullable: true })
+  montoEfectivo: number;
+
   @Column('text', { nullable: true })
   nombreDescuento: string;
 
@@ -59,11 +66,11 @@ export class Venta {
   @Column('text', { nullable: true })
   glosa: string;
 
-  @Column({ type: 'enum', enum: ['EFECTIVO', 'QR', 'TRANSFERENCIA'], default: 'EFECTIVO' })
+  @Column({ type: 'enum', enum: ['EFECTIVO', 'QR', 'QR-EFECTIVO'], default: 'EFECTIVO' })
   tipo_pago: string;
 
   @Column('float', { nullable: true })
-  montoRecibido:number;
+  montoRecibido: number;
 
   @Column({ type: 'bool', default: false })
   ventaAlContado: boolean;
@@ -72,10 +79,18 @@ export class Venta {
   @OneToMany(() => DetalleVenta, (detalleVenta) => detalleVenta.venta,)
   detalles: DetalleVenta[];
 
+  @OneToOne(() => QrGenerados, (qrGenerados) => qrGenerados.venta,)
+  qr: QrGenerados;
+
   // Relación muchos a uno
   @ManyToOne(() => Caja, (caja) => caja.ventas, {
     nullable: false, // Hace obligatorio que cada venta tenga una caja
   })
   caja: Caja;
+
+
+  @Column('boolean', { default: true })
+  estado: boolean;
+
 
 }

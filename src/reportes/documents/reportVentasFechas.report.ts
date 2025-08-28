@@ -123,7 +123,13 @@ export const ReportVentas = (ventas: Venta[], fechaInicio: string, fechaFin: str
               { text: `${venta.codigo}`, style: 'tableRow' },
               { text: `${venta.cliente?.nombre || 'Cliente desconocido'}`, style: 'tableRow' },
               { text: `${venta.tipo_pago}`, style: 'tableRow' },
-              { text: `${formatDate(venta.fecha)}`, style: 'tableRow' },
+              {
+                text: `${new Date(venta.fecha).toLocaleDateString('es-ES', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}`, style: 'tableRow'
+              },
               { text: `${venta.subtotal.toFixed(2)} Bs.`, style: 'tableRow' },
               { text: `${(venta.subtotal - venta.total).toFixed(2)} Bs.`, style: 'tableRow' },
               { text: `${venta.total.toFixed(2)} Bs.`, style: 'tableRow' },

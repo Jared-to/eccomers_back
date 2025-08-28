@@ -7,6 +7,7 @@ import { LoginUserDto, CreateUserDto, UpdateUserDto } from './dto';
 import { JwtPayload } from './interface/jwt-payload.interface';
 import { JwtService } from '@nestjs/jwt';
 import { User } from './entities/user.entity';
+import axios from 'axios';
 
 @Injectable()
 export class AuthService {
@@ -79,6 +80,24 @@ export class AuthService {
     return users;
   }
 
+  async getUserTokenQR(): Promise<string> {
+
+    const datos = {
+      username: process.env.USERNAME_EMPRESA,
+      password: process.env.PASSWORD_EMPRESA,
+    }
+
+    try {
+      const responder = await axios.post("https://dev-sip.mc4.com.bo:8443/autenticacion/v1/generarToken", datos, { headers: { apikey: process.env.APIKEY_CORREO_EMPRESA } })
+
+      return responder.data.objeto.token;
+
+
+    } catch (error) {
+      console.log(error.data);
+    }
+  }
+
   async getUserById(userId: string) {
     const user = await this.userRepository.findOne({
       where: { id: userId },
@@ -140,10 +159,23 @@ export class AuthService {
   }
 
   async cheAuthStatus(user: User) {
+    const datos = {
+      username: process.env.USERNAME_EMPRESA,
+      password: process.env.PASSWORD_EMPRESA,
+    }
 
-    return {
-      ...user,
-      token: this.getJwtToken({ id: user.id })
+    try {
+      const responder = await axios.post("https://dev-sip.mc4.com.bo:8443/autenticacion/v1/generarToken", datos, { headers: { apikey: process.env.APIKEY_CORREO_EMPRESA } })
+
+      user.tokenQR = responder.data.objeto.token;
+      await this.userRepository.save(user);
+      return {
+        ...user,
+        token: this.getJwtToken({ id: user.id })
+      }
+    } catch (error) {
+      console.log(error.data);
+
     }
 
   }

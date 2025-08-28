@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { PedidosService } from './pedidos.service';
 import { PedidosController } from './pedidos.controller';
 import { Pedido } from './entities/pedido.entity';
@@ -18,9 +18,9 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
     TypeOrmModule.forFeature([Pedido, DetallePedido]),
     CloudinaryModule,
     AuthModule,
-    VentasModule,
-    ClientesModule,
-    EventEmitterModule.forRoot(), 
+    forwardRef(() => ClientesModule),
+    forwardRef(() => VentasModule),
+    EventEmitterModule.forRoot(),
   ],
   exports: [PedidosService, TypeOrmModule]
 })

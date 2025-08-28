@@ -54,11 +54,19 @@ export class CreateVentaDto {
   @IsOptional()
   montoRecibido?: number;
 
+  @IsOptional()
+  @IsNumber()
+  montoQR?: number;
+
+  @IsOptional()
+  @IsNumber()
+  montoEfectivo?: number;
+
   @IsUUID()
   @IsOptional()
   descuento?: string;
 
-  @IsEnum(['EFECTIVO', 'QR', 'TRANSFERENCIA'])
+  @IsEnum(['EFECTIVO', 'QR', 'QR-EFECTIVO'])
   tipo_pago: string;
 
   @IsString()
@@ -70,6 +78,18 @@ export class CreateVentaDto {
 
   @IsBoolean()
   ventaAlContado: boolean;
+
+  @IsString()
+  @IsOptional()
+  idQR?: string;
+
+  @IsString()
+  @IsOptional()
+  aliasQR?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  estadoPago?: boolean;
 
   @IsArray()
   @IsOptional()

@@ -13,10 +13,13 @@ import { Almacen } from 'src/almacenes/entities/almacen.entity';
 import { CajasModule } from 'src/cajas/cajas.module';
 import { DescuentosModule } from 'src/descuentos/descuentos.module';
 import { ClientesModule } from 'src/clientes/clientes.module';
+import { PedidosModule } from 'src/pedidos/pedidos.module';
+import { ConfirmacionPagoQR } from './entities/confirmaciones-pago-qr.entity';
+import { QrGenerados } from './entities/qr-generados.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Venta, DetalleVenta, Producto, Almacen]),
+    TypeOrmModule.forFeature([Venta, DetalleVenta, Producto, Almacen, ConfirmacionPagoQR, QrGenerados]),
     AuthModule,
     InventarioModule,
     ProductosModule,
@@ -24,6 +27,8 @@ import { ClientesModule } from 'src/clientes/clientes.module';
     CajasModule,
     DescuentosModule,
     forwardRef(() => ClientesModule),
+    forwardRef(() => PedidosModule),
+
   ],
   controllers: [VentasController],
   providers: [VentasService],

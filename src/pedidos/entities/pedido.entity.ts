@@ -1,8 +1,9 @@
 import { User } from "src/auth/entities/user.entity";
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 import { DetallePedido } from "./productosPedido.entity";
 import { Almacen } from "src/almacenes/entities/almacen.entity";
 import { Venta } from "src/ventas/entities/venta.entity";
+import { QrGenerados } from "src/ventas/entities/qr-generados.entity";
 
 
 @Entity('pedido')
@@ -63,6 +64,10 @@ export class Pedido {
   @Column('text', { nullable: true })
   fotoRecibo: string;
 
+
+  @Column('enum', { enum: ['PAGADO', 'PENDIENTE', 'INHABILITADO'], default: 'PENDIENTE' })
+  estadoPago: string;
+
   @Column('text', { nullable: true })
   glosa: string;
 
@@ -86,4 +91,7 @@ export class Pedido {
 
   @OneToMany(() => DetallePedido, (detalleVenta) => detalleVenta.pedido,)
   detalles: DetallePedido[];
+
+  @OneToOne(() => QrGenerados, (qrGenerado) => qrGenerado.pedido)
+  qr: QrGenerados;
 }

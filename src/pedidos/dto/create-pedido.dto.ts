@@ -54,6 +54,11 @@ export class CreatePedidoDto {
 
   @IsOptional()
   detalles?: any;
+
+  @IsOptional()
+  @IsString()
+  idQR?: string
+
 }
 
 export class CreateDetallePedidoDto {
