@@ -559,7 +559,7 @@ export class VentasService {
     try {
       // 5. Llamar al endpoint que genera el QR con POST, pasando ApiKey por query y token en headers
       const respuesta = await axios.post(
-        `https://dev-sip.mc4.com.bo:8443/api/v1/generaQr?ApiKey=${process.env.APIKEY_EMPRESA}`,
+        `https://sip.mc4.com.bo:8443/api/v1/generaQr?ApiKey=${process.env.APIKEY_EMPRESA}`,
         datos,
         {
           headers: {
@@ -570,6 +570,7 @@ export class VentasService {
       );
 
       if (respuesta.data.codigo === '9999') {
+        console.log(respuesta.data);
 
         throw new BadRequestException('Hubo un error al generar el QR');
       } else {
@@ -607,7 +608,7 @@ export class VentasService {
 
     } catch (error) {
       // 9. En caso de error en la generación o subida, lo reportamos
-      console.error('Error al generar QR o subir a Cloudinary:', error);
+      console.error('Error al generar QR o subir a Cloudinary:');
       throw new Error('No se pudo generar ni subir el QR');
     }
   }
@@ -673,7 +674,7 @@ export class VentasService {
   // Método asincrónico para verificar el estado de un QR asociado a un alias
   public async verificarEstadoQR(alias: string, token: string): Promise<'PAGADO' | 'PENDIENTE' | 'INHABILITADO' | string> {
     // Endpoint del proveedor
-    const url = 'https://dev-sip.mc4.com.bo:8443/api/v1/estadoTransaccion';
+    const url = 'https://sip.mc4.com.bo:8443/api/v1/estadoTransaccion';
 
     // Body de la petición
     const body = { alias };

@@ -88,13 +88,14 @@ export class AuthService {
     }
 
     try {
-      const responder = await axios.post("https://dev-sip.mc4.com.bo:8443/autenticacion/v1/generarToken", datos, { headers: { apikey: process.env.APIKEY_CORREO_EMPRESA } })
+      const responder = await axios.post("https://sip.mc4.com.bo:8443/autenticacion/v1/generarToken", datos, { headers: { apikey: process.env.APIKEY_CORREO_EMPRESA } })
+
 
       return responder.data.objeto.token;
 
 
     } catch (error) {
-      console.log(error.data);
+      console.log(error);
     }
   }
 
@@ -165,7 +166,8 @@ export class AuthService {
     }
 
     try {
-      const responder = await axios.post("https://dev-sip.mc4.com.bo:8443/autenticacion/v1/generarToken", datos, { headers: { apikey: process.env.APIKEY_CORREO_EMPRESA } })
+      const responder = await axios.post("https://sip.mc4.com.bo:8443/autenticacion/v1/generarToken", datos, { headers: { apikey: process.env.APIKEY_CORREO_EMPRESA } })
+      console.log(responder.data);
 
       user.tokenQR = responder.data.objeto.token;
       await this.userRepository.save(user);
@@ -174,7 +176,7 @@ export class AuthService {
         token: this.getJwtToken({ id: user.id })
       }
     } catch (error) {
-      console.log(error.data);
+      console.log(error);
 
     }
 
