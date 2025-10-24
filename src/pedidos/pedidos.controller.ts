@@ -1,8 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { PedidosService } from './pedidos.service';
-import { CreatePedidoDto } from './dto/create-pedido.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
 
+import { FileInterceptor } from '@nestjs/platform-express';
 @Controller('pedidos')
 export class PedidosController {
   constructor(private readonly pedidosService: PedidosService) { }
@@ -11,9 +10,11 @@ export class PedidosController {
   @UseInterceptors(FileInterceptor('file'))
   create(
     @Body() createPedidoDto: any,
+    @UploadedFile() file?: Express.Multer.File,
+
   ) {
 
-    return this.pedidosService.solicitudPedido(createPedidoDto,);
+    return this.pedidosService.solicitudPedido(createPedidoDto,file || null);
   }
 
   @Get()
@@ -54,7 +55,7 @@ export class PedidosController {
   }
 
   @Post('confirmar/:id/:id_caja/:user/:metodo_pago/:idQR')
-  confirmarPedido(@Param('id') id: string, @Param('id_caja') caja: string, @Param('user') user: string, @Param('metodo_pago') metodoPago: string,@Param('idQR') idQR: string,) {
+  confirmarPedido(@Param('id') id: string, @Param('id_caja') caja: string, @Param('user') user: string, @Param('metodo_pago') metodoPago: string, @Param('idQR') idQR: string,) {
     return this.pedidosService.pedidoVenta(id, caja, user, metodoPago,idQR);
   }
 

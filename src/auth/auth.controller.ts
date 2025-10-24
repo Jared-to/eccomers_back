@@ -34,7 +34,7 @@ export class AuthController {
   }
 
   @Get('usuarios')
-  @Auth(ValidRoles.admin)
+  @Auth(ValidRoles.admin,ValidRoles.user)
   getUsers() {
     return this.authService.getUsers();
   }
@@ -58,7 +58,6 @@ export class AuthController {
 
 
   @Patch('deactivate/:id')
-  @Auth(ValidRoles.admin)
   deactivateUser(
     @Param('id', ParseUUIDPipe) id: string
   ) {

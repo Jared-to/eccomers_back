@@ -28,7 +28,7 @@ export class PedidosService {
     @InjectRepository(QrGenerados)
     private readonly qrGeneradosRepository: Repository<QrGenerados>,
   ) { }
-  async solicitudPedido(createPedidoDto: CreatePedidoDto) {
+  async solicitudPedido(createPedidoDto: CreatePedidoDto, file?: Express.Multer.File) {
     const { idQR, ...createPedido } = createPedidoDto
     const direccionGps = createPedidoDto.dir_gps ? JSON.parse(createPedidoDto.dir_gps) : null;
     const detalles = JSON.parse(createPedidoDto.detalles);
@@ -39,7 +39,11 @@ export class PedidosService {
       fechaPedido: moment().tz("America/La_Paz").format("YYYY-MM-DD HH:mm:ss"),
       almacen: { id: createPedidoDto.sucursal }
     })
-
+    if (file) {
+      // Subir imágenes a Cloudinary
+      const uploadPromises = await this.cloudinaryService.uploadFile(file);
+      pedido.fotoRecibo = uploadPromises.secure_url;
+    }
     const pedidoG = await this.pedidoRepository.save(pedido);
     //detalles del pedido
     for (const element of detalles) {
