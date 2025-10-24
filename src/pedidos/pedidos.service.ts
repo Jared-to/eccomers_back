@@ -10,8 +10,8 @@ import { CreateVentaDto } from 'src/ventas/dto/create-venta.dto';
 import { ClientesService } from 'src/clientes/clientes.service';
 import { VentasService } from 'src/ventas/ventas.service';
 import * as moment from 'moment-timezone';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { QrGenerados } from 'src/ventas/entities/qr-generados.entity';
+import { NotificacionesService } from 'src/notificaciones/notificaciones.service';
 
 @Injectable()
 export class PedidosService {
@@ -24,7 +24,7 @@ export class PedidosService {
     private readonly authService: AuthService,
     private readonly clientesService: ClientesService,
     private readonly ventasService: VentasService,
-    private readonly eventEmitter: EventEmitter2,
+    private readonly notificationsService: NotificacionesService,
     @InjectRepository(QrGenerados)
     private readonly qrGeneradosRepository: Repository<QrGenerados>,
   ) { }
@@ -67,11 +67,15 @@ export class PedidosService {
 
       await this.qrGeneradosRepository.save(registro);
     }
-
-
-
-    // Emitir evento para actualizar la cantidad de pedidos pendientes
-    this.eventEmitter.emit('pedido.creado', pedidoG);
+    this.notificationsService.sendEvent({
+      type: 'ventaCreada',
+      payload: {
+        rol: ['admin',],
+        tipo: 'pedido',
+        mensaje: `Nuevo Pedido - ${pedidoGuardado?.codigo} - ${createPedido.nombreSolicitante}`,
+        fecha: pedidoGuardado.fechaPedido,
+      },
+    });
 
     return pedidoG
   }
@@ -87,8 +91,6 @@ export class PedidosService {
 
 
     const pedidoG = await this.pedidoRepository.save(pedido);
-    // Emitir evento para actualizar la cantidad de pedidos pendientes
-    this.eventEmitter.emit('pedido.aceptado');
 
     return pedidoG;
   }
@@ -107,7 +109,6 @@ export class PedidosService {
 
     await this.pedidoRepository.remove(pedido);
 
-    this.eventEmitter.emit('pedido.rechazado');
     return "Pedido eliminado con exito"
   }
   async cancelarPedido(id: string, user: string) {

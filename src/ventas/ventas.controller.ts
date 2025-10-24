@@ -40,6 +40,11 @@ export class VentasController {
     return this.ventasService.findAllDates(fechaInicio, fechaFin, user);
   }
 
+  @Get('chart')
+  async getDatosChart(@Query('tipo') tipo: 'semana' | 'mes' | 'todo') {
+    return this.ventasService.obtenerDatosVentas(tipo || 'semana');
+  }
+
   @Get(':id')
   @Auth(ValidRoles.admin, ValidRoles.user)
   findOne(@Param('id') id: string) {

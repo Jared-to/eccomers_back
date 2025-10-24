@@ -143,14 +143,14 @@ export class AjustesInventario {
             movimientosPendientes.push(
               this.inventarioService.agregarStock({
                 almacenId: almacen_id,
-                cantidad: detalleActualizado.cantidad + detalleExistente.cantidad,
+                cantidad: detalleActualizado.cantidad,
                 productoId: detalleActualizado.producto_id,
               })
             );
             movimientosPendientes.push(
               this.movimientosService.registrarIngreso({
                 almacenId: almacen_id,
-                cantidad: detalleActualizado.cantidad + detalleExistente.cantidad,
+                cantidad: detalleActualizado.cantidad,
                 productoId: detalleActualizado.producto_id,
                 descripcion: 'Editar ajuste',
               })
@@ -159,14 +159,14 @@ export class AjustesInventario {
             movimientosPendientes.push(
               this.inventarioService.descontarStock({
                 almacenId: almacen_id,
-                cantidad: detalleActualizado.cantidad + detalleExistente.cantidad,
+                cantidad: detalleActualizado.cantidad,
                 productoId: detalleActualizado.producto_id,
               })
             );
             movimientosPendientes.push(
               this.movimientosService.registrarSalida({
                 almacenId: almacen_id,
-                cantidad: detalleActualizado.cantidad + detalleExistente.cantidad,
+                cantidad: detalleActualizado.cantidad,
                 productoId: detalleActualizado.producto_id,
                 descripcion: 'Editar ajuste',
               })
@@ -292,6 +292,7 @@ export class AjustesInventario {
         'detalle.producto_id',
         'detalle.cantidad',
       ])
+      .orderBy('ajuste.fecha', 'DESC')
       .getMany();
 
     return ajustes.map((ajuste) => ({
@@ -325,7 +326,7 @@ export class AjustesInventario {
       .leftJoin(
         'inventario',
         'inventario',
-        'inventario.almacen = almacen.id'
+        'inventario.almacen = almacen.id AND inventario.product = producto.id' // ← CORREGIDO
       )
       .select([
         'ajuste.id',
@@ -345,16 +346,20 @@ export class AjustesInventario {
         'producto.sku',
         'producto.codigo',
         'inventario.stock AS detalle_stock',
+        'detalle.id AS detalle_id', // ← para mapear luego
       ])
       .where('ajuste.id = :id', { id })
       .getRawAndEntities();
 
-
-    const entity = ajuste.entities[0]; // Accede al primer elemento de entities
-
+    const entity = ajuste.entities[0];
     if (!entity) {
       throw new Error(`No se encontró un ajuste con el ID "${id}".`);
     }
+
+    // --- MAP raw stock by detalle_id para no depender del index
+    const stockMap = new Map(
+      ajuste.raw.map(r => [r.detalle_id, r.detalle_stock])
+    );
 
     return {
       id: entity.id,
@@ -368,7 +373,7 @@ export class AjustesInventario {
         id: entity.usuario?.id,
         nombre: entity.usuario?.fullName,
       },
-      detalles: entity.detalles.map((detalle, index) => ({
+      detalles: entity.detalles.map(detalle => ({
         id: detalle.id,
         id_producto: detalle.producto.id,
         alias: detalle.producto.alias,
@@ -378,10 +383,11 @@ export class AjustesInventario {
         descripcion: detalle.producto.descripcion,
         tipo: detalle.tipo,
         sku: detalle.producto.sku,
-        stock: ajuste.raw[index]?.detalle_stock || 0,
+        stock: Number(stockMap.get(detalle.id)) || 0, // ← STOCK CORRECTO
       })),
     };
   }
+
   async deleteAjuste(id: string): Promise<void> {
     // Verificar si el ajuste existe
     const existingAjuste = await this.ajusteInventarioRepository.findOne({

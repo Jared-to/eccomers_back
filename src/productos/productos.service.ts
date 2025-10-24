@@ -111,6 +111,8 @@ export class ProductosService {
       // Actualizar los datos básicos del producto
       Object.assign(producto, productoData);
 
+      producto.categoria=categoria;
+
       const productoG = await this.productoRepository.save(producto);
       // 🔥 Comparación inteligente de variantes 🔥
       if (variantes && variantes.length > 0) {

@@ -99,14 +99,14 @@ export class VentasService {
       ventaGuardada.codigo = `V${(ventaGuardada.increment || 1).toString().padStart(4, '0')}`;
 
       //Si el pago hubo un qr Buscar
-      if (ventaGuardada.tipo_pago !== 'EFECTIVO') {
-        //Buscar el qr
-        const registro = await queryRunner.manager.findOne(QrGenerados, { where: { idQR: idQR } });
+      // if (ventaGuardada.tipo_pago !== 'EFECTIVO') {
+      //   //Buscar el qr
+      //   const registro = await queryRunner.manager.findOne(QrGenerados, { where: { idQR: idQR } });
 
-        registro.venta = ventaGuardada;
+      //   registro.venta = ventaGuardada;
 
-        await queryRunner.manager.save(registro);
-      }
+      //   await queryRunner.manager.save(registro);
+      // }
 
       await queryRunner.manager.save(Venta, ventaGuardada);
 
@@ -354,6 +354,7 @@ export class VentasService {
     if (fechaInicio === 'xx' && fechaFin === 'xx') {
       return this.ventasRepository.find({
         where: isAdmin ? {} : { vendedor: { id: user.id } },
+        order: { fecha: 'DESC' },
         relations: ['detalles', 'detalles.producto', 'almacen', 'cliente', 'vendedor', 'caja', 'qr'],
       });
     }
@@ -364,8 +365,8 @@ export class VentasService {
       if (user && !isAdmin) {
         whereConditions.vendedor = { id: user.id };
       }
-      const fechaInicioFormat = formatDateToYMD(fechaInicio);
-      const fechaFinFormat = formatDateToYMD(fechaFin);
+      const fechaInicioFormat = (fechaInicio);
+      const fechaFinFormat = (fechaFin);
 
       if (fechaInicioFormat && fechaFinFormat) {
         whereConditions.fecha = Raw(alias => `
@@ -383,6 +384,7 @@ export class VentasService {
 
       const ventas = await this.ventasRepository.find({
         where: whereConditions,
+        order: { fecha: 'DESC' },
         relations: ['detalles', 'detalles.producto', 'almacen', 'cliente', 'vendedor', 'caja', 'qr'],
       });
 
@@ -494,7 +496,77 @@ export class VentasService {
       await queryRunner.release();
     }
   }
+  async obtenerDatosVentas(tipo: 'semana' | 'mes' | 'todo') {
+    const today = new Date();
+    let pData: number[] = [];
+    let xLabels: string[] = [];
 
+    if (tipo === 'semana') {
+      const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+      const lunes = new Date(today);
+      lunes.setDate(today.getDate() - today.getDay() + 1); // lunes de esta semana
+
+      for (let i = 0; i < 7; i++) {
+        const fechaInicio = new Date(lunes);
+        fechaInicio.setDate(lunes.getDate() + i);
+
+        const fechaFin = new Date(fechaInicio);
+        fechaFin.setDate(fechaInicio.getDate() + 1);
+
+        const cantidad = await this.ventasRepository.count({
+          where: {
+            fecha: Between(fechaInicio, fechaFin),
+          },
+        });
+
+        pData.push(cantidad);
+      }
+
+      xLabels = dias;
+    }
+
+    if (tipo === 'mes') {
+      const year = today.getFullYear();
+      const month = today.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      for (let i = 1; i <= daysInMonth; i++) {
+        const fechaInicio = new Date(year, month, i);
+        const fechaFin = new Date(year, month, i + 1);
+
+        const cantidad = await this.ventasRepository.count({
+          where: {
+            fecha: Between(fechaInicio, fechaFin),
+          },
+        });
+
+        pData.push(cantidad);
+        xLabels.push(i.toString());
+      }
+    }
+
+    if (tipo === 'todo') {
+      const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      const year = today.getFullYear();
+
+      for (let m = 0; m < 12; m++) {
+        const fechaInicio = new Date(year, m, 1);
+        const fechaFin = new Date(year, m + 1, 1);
+
+        const cantidad = await this.ventasRepository.count({
+          where: {
+            fecha: Between(fechaInicio, fechaFin),
+          },
+        });
+
+        pData.push(cantidad);
+      }
+
+      xLabels = meses;
+    }
+
+    return { pData, xLabels };
+  }
   async findClients(id_cliente: string): Promise<Venta[]> {
     const ventas = await this.ventasRepository.find({
       where: { cliente: { id: id_cliente } },

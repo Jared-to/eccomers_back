@@ -9,7 +9,7 @@ import { reportClients } from './documents/reportClients.report';
 import { GastosService } from 'src/gastos/gastos.service';
 import { Venta } from 'src/ventas/entities/venta.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Between, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
+import { Between, LessThanOrEqual, MoreThanOrEqual, Raw, Repository } from 'typeorm';
 import { Gasto } from 'src/gastos/entities/gasto.entity';
 import { Caja } from 'src/cajas/entities/caja.entity';
 import { cajaReport } from './documents/reportCaja.report';
@@ -93,7 +93,7 @@ export class ReportesService {
 
     const pedido = await this.ventasRepository.findOne({
       where: { id },
-      relations: ['vendedor','cliente', 'detalles', 'detalles.producto', 'almacen'],
+      relations: ['vendedor', 'cliente', 'detalles', 'detalles.producto', 'almacen'],
     });
 
     if (!pedido) {
@@ -110,35 +110,35 @@ export class ReportesService {
     return pdfDoc;
   }
 
-  
+
   // ReportesGasto
   async obtenerPdfGastos(fechaInicio: string, fechaFin: string, usuario: User): Promise<PDFKit.PDFDocument> {
     const gastos = await this.gastosService.findAllDates(fechaInicio, fechaFin, usuario);
 
     if (gastos.length === 0) {
-        throw new Error('No se encontraron gastos en el rango de fechas seleccionado');
+      throw new Error('No se encontraron gastos en el rango de fechas seleccionado');
     }
 
     const docDefinition = ReportGastos(gastos, fechaInicio, fechaFin);
-    
+
     return this.printer.createPdf(docDefinition);
   }
 
   // Reporte de Ventas
   async reporteVentasPDF(fechaInicio: string, fechaFin: string, usuario: User): Promise<PDFKit.PDFDocument> {
     // Pasamos las fechas al reporte de ventas
-    
+
     const ventas = await this.ventasService.findAllDates(fechaInicio, fechaFin, usuario);
-  
+
     if (ventas.length === 0) {
       throw new Error('No se encontraron ventas en el rango de fechas seleccionado');
     }
-    
+
     const docDefinition = ReportVentas(ventas, fechaInicio, fechaFin);
-    
+
     return this.printer.createPdf(docDefinition);
   }
-  
+
   //END MODIFICADO
 
   async obtenerPdfVentas(): Promise<PDFKit.PDFDocument> {
@@ -181,9 +181,11 @@ export class ReportesService {
       if (fechaInicio === FILTRO_SIN_RESTRICCION && fechaFin === FILTRO_SIN_RESTRICCION && almacen === FILTRO_SIN_RESTRICCION) {
         const [ventas, gastos] = await Promise.all([
           this.ventasRepository.find({
+            order: { fecha: 'desc' },
             relations: ['detalles', 'detalles.producto', 'almacen', 'cliente', 'vendedor', 'caja'],
           }),
           this.gastoRepository.find({
+            order: { fecha: 'desc' },
             relations: ['usuario', 'categoria', 'caja', 'almacen'],
           })
         ]);
@@ -191,23 +193,10 @@ export class ReportesService {
         return { ventas, gastos };
       }
 
-      // Normalizamos las fechas a medianoche
-      const normalizeDate = (date: string): Date => {
-        const d = new Date(date);
-        if (isNaN(d.getTime())) {
-          throw new Error(`Fecha inválida: ${date}`);
-        }
-        d.setHours(0, 0, 0, 0);
-        return d;
-      };
 
-      const fechaInicioNormalizada = fechaInicio !== FILTRO_SIN_RESTRICCION ? normalizeDate(fechaInicio) : null;
-      const fechaFinNormalizada = fechaFin !== FILTRO_SIN_RESTRICCION ? normalizeDate(fechaFin) : null;
+      const fechaInicioNormalizada = fechaInicio !== FILTRO_SIN_RESTRICCION ? (fechaInicio) : null;
+      const fechaFinNormalizada = fechaFin !== FILTRO_SIN_RESTRICCION ? (fechaFin) : null;
 
-      // Si la fecha final es la misma que la inicial, ajustamos al final del día
-      if (fechaInicioNormalizada && fechaFinNormalizada && fechaInicio === fechaFin) {
-        fechaFinNormalizada.setHours(23, 59, 59, 999);
-      }
 
       // Construcción de condiciones de búsqueda
       const whereVentas: any = {};
@@ -216,12 +205,15 @@ export class ReportesService {
       if (fechaInicioNormalizada && fechaFinNormalizada) {
         whereVentas.fecha = Between(fechaInicioNormalizada, fechaFinNormalizada);
         whereGastos.fecha = Between(fechaInicioNormalizada, fechaFinNormalizada);
-      } else if (fechaInicioNormalizada) {
-        whereVentas.fecha = MoreThanOrEqual(fechaInicioNormalizada);
-        whereGastos.fecha = MoreThanOrEqual(fechaInicioNormalizada);
-      } else if (fechaFinNormalizada) {
-        whereVentas.fecha = LessThanOrEqual(fechaFinNormalizada);
-        whereGastos.fecha = LessThanOrEqual(fechaFinNormalizada);
+
+        if (fechaInicioNormalizada && fechaFinNormalizada) {
+          whereVentas.fecha = Raw(alias => `
+              DATE(${alias}) BETWEEN DATE('${fechaInicioNormalizada}') AND DATE('${fechaFinNormalizada}')
+            `);
+          whereGastos.fecha = Raw(alias => `
+              DATE(${alias}) BETWEEN DATE('${fechaInicioNormalizada}') AND DATE('${fechaFinNormalizada}')
+            `);
+        }
       }
 
       if (almacen !== FILTRO_SIN_RESTRICCION) {
@@ -237,10 +229,12 @@ export class ReportesService {
       const [ventas, gastos] = await Promise.all([
         this.ventasRepository.find({
           where: whereVentas,
+          order: { fecha: 'DESC' },
           relations: ['detalles', 'detalles.producto', 'almacen', 'cliente', 'vendedor', 'caja'],
         }),
         this.gastoRepository.find({
           where: whereGastos,
+          order: { fecha: 'DESC' },
           relations: ['usuario', 'categoria', 'caja', 'almacen'],
         })
       ]);

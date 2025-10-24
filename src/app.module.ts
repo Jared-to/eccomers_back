@@ -22,6 +22,7 @@ import { TraspasosModule } from './traspasos/traspasos.module';
 import { PedidosModule } from './pedidos/pedidos.module';
 import { ConfigModuleConfig } from './config/config.module';
 import { DescuentosModule } from './descuentos/descuentos.module';
+import { NotificacionesModule } from './notificaciones/notificaciones.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { DescuentosModule } from './descuentos/descuentos.module';
     PedidosModule,
     ConfigModuleConfig,
     DescuentosModule,
+    NotificacionesModule,
   ],
 })
 export class AppModule { }

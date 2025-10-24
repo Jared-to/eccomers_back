@@ -1,4 +1,4 @@
-import { IsArray, IsBoolean, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Min, ValidateNested } from 'class-validator';
 
 export class CreateDetalleVentaDto {
   @IsString()
@@ -14,6 +14,7 @@ export class CreateDetalleVentaDto {
   precio: number;
 
   @IsNumber()
+  @Min(1)
   cantidad: number;
 
 
@@ -56,10 +57,12 @@ export class CreateVentaDto {
 
   @IsOptional()
   @IsNumber()
+  @Min(1)
   montoQR?: number;
 
   @IsOptional()
   @IsNumber()
+  @Min(1)
   montoEfectivo?: number;
 
   @IsUUID()

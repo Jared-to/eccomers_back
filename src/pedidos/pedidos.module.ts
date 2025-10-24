@@ -8,18 +8,19 @@ import { AuthModule } from 'src/auth/auth.module';
 import { DetallePedido } from './entities/productosPedido.entity';
 import { VentasModule } from 'src/ventas/ventas.module';
 import { ClientesModule } from 'src/clientes/clientes.module';
-import { PedidoGateway } from './gateway/pedidos.gateway';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { NotificacionesModule } from 'src/notificaciones/notificaciones.module';
 
 @Module({
   controllers: [PedidosController],
-  providers: [PedidoGateway, PedidosService,],
+  providers: [ PedidosService,],
   imports: [
     TypeOrmModule.forFeature([Pedido, DetallePedido]),
     CloudinaryModule,
     AuthModule,
     forwardRef(() => ClientesModule),
     forwardRef(() => VentasModule),
+    NotificacionesModule,
     EventEmitterModule.forRoot(),
   ],
   exports: [PedidosService, TypeOrmModule]

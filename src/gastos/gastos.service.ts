@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Between, Repository } from 'typeorm';
+import { Between, Raw, Repository } from 'typeorm';
 import { Gasto } from './entities/gasto.entity';
 import { CreateGastoDto } from './dto/create-gasto.dto';
 import { UpdateGastoDto } from './dto/update-gasto.dto';
@@ -75,6 +75,7 @@ export class GastosService {
 
     return this.gastoRepository.find({
       where: isAdmin ? {} : { usuario: { id: user.id } },
+      order: { fecha: 'DESC' },
       relations: ['usuario', 'categoria', 'caja'],
     });
   }
@@ -86,48 +87,38 @@ export class GastosService {
     if (fechaInicio === 'xx' && fechaFin === 'xx') {
       return this.gastoRepository.find({
         where: isAdmin ? {} : { usuario: { id: user.id } },
+        order: { fecha: 'DESC' },
         relations: ['usuario', 'categoria', 'caja'],
       });
     }
 
-    const normalizeDateStart = (date: string): Date => {
-      const localDate = new Date(date);
-      if (isNaN(localDate.getTime())) throw new Error(`Fecha inválida: ${date}`);
-      const timezoneOffset = localDate.getTimezoneOffset();
-      localDate.setMinutes(localDate.getMinutes() - timezoneOffset);
-      localDate.setHours(0, 0, 0, 0);
-      localDate.setDate(localDate.getDate() + 1)
-      return localDate;
-    };
 
-    const normalizeDateEnd = (date: string): Date => {
-      const localDate = new Date(date);
-      if (isNaN(localDate.getTime())) throw new Error(`Fecha inválida: ${date}`);
-
-      const timezoneOffset = localDate.getTimezoneOffset();
-      localDate.setMinutes(localDate.getMinutes() - timezoneOffset);
-
-      localDate.setHours(0, 0, 0, 0); // Ponerlo al inicio del día
-      localDate.setDate(localDate.getDate() + 2); // Sumamos 1 día
-      localDate.setMilliseconds(-1); // Vamos al último milisegundo del día anterior
-      return localDate;
-    };
-
+    const whereConditions: any = {};
 
     try {
-      const fechaInicioNormalizada = normalizeDateStart(fechaInicio);
-      const fechaFinNormalizada = normalizeDateEnd(fechaFin);
+      const fechaInicioFormat = (fechaInicio);
+      const fechaFinFormat = (fechaFin);
 
-      const whereConditions: any = {
-        fecha: Between(fechaInicioNormalizada, fechaFinNormalizada),
-      };
-
+      if (fechaInicioFormat && fechaFinFormat) {
+        whereConditions.fecha = Raw(alias => `
+      DATE(${alias}) BETWEEN DATE('${fechaInicioFormat}') AND DATE('${fechaFinFormat}')
+    `);
+      } else if (fechaInicioFormat) {
+        whereConditions.fecha = Raw(alias => `
+      DATE(${alias}) >= DATE('${fechaInicioFormat}')
+    `);
+      } else if (fechaFinFormat) {
+        whereConditions.fecha = Raw(alias => `
+      DATE(${alias}) <= DATE('${fechaFinFormat}')
+    `);
+      }
       if (!isAdmin) {
         whereConditions.vendedor = { id: user.id };
       }
 
       const ventas = await this.gastoRepository.find({
         where: whereConditions,
+        order: { fecha: 'DESC' },
         relations: ['usuario', 'categoria', 'caja'],
       });
 

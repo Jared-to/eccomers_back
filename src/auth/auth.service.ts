@@ -160,26 +160,29 @@ export class AuthService {
   }
 
   async cheAuthStatus(user: User) {
-    const datos = {
-      username: process.env.USERNAME_EMPRESA,
-      password: process.env.PASSWORD_EMPRESA,
+    // const datos = {
+    //   username: process.env.USERNAME_EMPRESA,
+    //   password: process.env.PASSWORD_EMPRESA,
+    // }
+
+    // try {
+    //   const responder = await axios.post("https://sip.mc4.com.bo:8443/autenticacion/v1/generarToken", datos, { headers: { apikey: process.env.APIKEY_CORREO_EMPRESA } })
+    //   console.log(responder.data);
+
+    //   user.tokenQR = responder.data.objeto.token;
+    //   await this.userRepository.save(user);
+    //   return {
+    //     ...user,
+    //     token: this.getJwtToken({ id: user.id })
+    //   }
+    // } catch (error) {
+    //   console.log(error);
+
+    // }
+    return {
+      ...user,
+      token: this.getJwtToken({ id: user.id })
     }
-
-    try {
-      const responder = await axios.post("https://sip.mc4.com.bo:8443/autenticacion/v1/generarToken", datos, { headers: { apikey: process.env.APIKEY_CORREO_EMPRESA } })
-      console.log(responder.data);
-
-      user.tokenQR = responder.data.objeto.token;
-      await this.userRepository.save(user);
-      return {
-        ...user,
-        token: this.getJwtToken({ id: user.id })
-      }
-    } catch (error) {
-      console.log(error);
-
-    }
-
   }
 
   private getJwtToken(payload: JwtPayload) {
