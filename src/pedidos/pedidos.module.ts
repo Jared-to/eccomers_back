@@ -10,10 +10,11 @@ import { VentasModule } from 'src/ventas/ventas.module';
 import { ClientesModule } from 'src/clientes/clientes.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { NotificacionesModule } from 'src/notificaciones/notificaciones.module';
+import { PedidoListener } from './listeners/pedido.listner';
 
 @Module({
   controllers: [PedidosController],
-  providers: [ PedidosService,],
+  providers: [ PedidosService,PedidoListener],
   imports: [
     TypeOrmModule.forFeature([Pedido, DetallePedido]),
     CloudinaryModule,

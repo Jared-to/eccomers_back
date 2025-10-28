@@ -23,6 +23,7 @@ import { PedidosService } from 'src/pedidos/pedidos.service';
 import { Pedido } from 'src/pedidos/entities/pedido.entity';
 import { QrGenerados } from './entities/qr-generados.entity';
 import { ConfirmacionPagoQR } from './entities/confirmaciones-pago-qr.entity';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 @Injectable()
 export class VentasService {
   constructor(
@@ -45,6 +46,7 @@ export class VentasService {
     @Inject(forwardRef(() => ClientesService))
     private readonly clientesService: ClientesService,
     private readonly dataSource: DataSource,
+    private readonly eventEmitter: EventEmitter2,
 
   ) { }
 
@@ -120,7 +122,27 @@ export class VentasService {
       await this.registrarMovimientosInventario(detalles, ventaGuardada.codigo, ventaData.almacen);
 
       await queryRunner.commitTransaction();
-      return this.findOne(ventaGuardada.id);
+
+            // --- ENVÍO DEL MENSAJE ---
+      const mensaje = `🛒 *Comercio.bo*  
+✨ ¡Hola BLESSBURGER, se realizó una *nueva venta*! ✨
+
+👤 Cliente: *${venta.nombreCliente || 'Desconocido'}*  
+💰 Total: *${venta.total} Bs*  
+💰 Metodo Pago: *${venta.tipo_pago} Bs*  
+🆔 Código: *${venta.codigo}*  
+📅 Fecha: *${new Date(venta.fecha).toLocaleString()}*
+ Sistema: *https://blessburger.items.bo*
+
+
+✅ Revisa los detalles en tu panel.`;
+
+      // Emitir evento asíncrono SIN bloquear la respuesta
+      this.eventEmitter.emitAsync('venta.creada', {
+        numero: process.env.WSP_NUM,
+        mensaje,
+      });
+      return (ventaGuardada);
     } catch (error) {
       console.log(error);
       await queryRunner.rollbackTransaction();

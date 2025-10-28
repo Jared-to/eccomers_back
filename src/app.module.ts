@@ -23,6 +23,7 @@ import { PedidosModule } from './pedidos/pedidos.module';
 import { ConfigModuleConfig } from './config/config.module';
 import { DescuentosModule } from './descuentos/descuentos.module';
 import { NotificacionesModule } from './notificaciones/notificaciones.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { NotificacionesModule } from './notificaciones/notificaciones.module';
     ConfigModuleConfig,
     DescuentosModule,
     NotificacionesModule,
+    EventEmitterModule.forRoot(),
   ],
 })
 export class AppModule { }

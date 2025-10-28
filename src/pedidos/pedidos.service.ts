@@ -12,6 +12,7 @@ import { VentasService } from 'src/ventas/ventas.service';
 import * as moment from 'moment-timezone';
 import { QrGenerados } from 'src/ventas/entities/qr-generados.entity';
 import { NotificacionesService } from 'src/notificaciones/notificaciones.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class PedidosService {
@@ -27,9 +28,11 @@ export class PedidosService {
     private readonly notificationsService: NotificacionesService,
     @InjectRepository(QrGenerados)
     private readonly qrGeneradosRepository: Repository<QrGenerados>,
+    private readonly eventEmitter: EventEmitter2,
+
   ) { }
   async solicitudPedido(createPedidoDto: CreatePedidoDto, file?: Express.Multer.File) {
-    const { idQR, ...createPedido } = createPedidoDto
+    const { ...createPedido } = createPedidoDto
     const direccionGps = createPedidoDto.dir_gps ? JSON.parse(createPedidoDto.dir_gps) : null;
     const detalles = JSON.parse(createPedidoDto.detalles);
 
@@ -62,15 +65,15 @@ export class PedidosService {
     pedidoG.codigo = nuevoCodigo;
 
     const pedidoGuardado = await this.pedidoRepository.save(pedidoG);
-    //Si el tipo de pago fue en QR
-    if (pedidoG.metodoPago === 'QR') {
-      //buscar registro
-      const registro = await this.qrGeneradosRepository.findOne({ where: { idQR: idQR } });
+    // //Si el tipo de pago fue en QR
+    // if (pedidoG.metodoPago === 'QR') {
+    //   //buscar registro
+    //   const registro = await this.qrGeneradosRepository.findOne({ where: { idQR: idQR } });
 
-      registro.pedido = pedidoGuardado
+    //   registro.pedido = pedidoGuardado
 
-      await this.qrGeneradosRepository.save(registro);
-    }
+    //   await this.qrGeneradosRepository.save(registro);
+    // }
     this.notificationsService.sendEvent({
       type: 'ventaCreada',
       payload: {
@@ -80,6 +83,28 @@ export class PedidosService {
         fecha: pedidoGuardado.fechaPedido,
       },
     });
+
+    // --- ENVÍO DEL MENSAJE ---
+    const mensaje = `🛒 *Comercio.bo*  
+✨ ¡Hola BLESSBURGER, se realizó un *nuevo pedido*! ✨
+
+👤 Cliente: *${pedidoGuardado.nombreSolicitante || 'Desconocido'}*  
+💰 Total: *${pedidoGuardado.total} Bs*  
+💰 Metodo de Pago: *${pedidoGuardado.metodoPago}*  
+💰 Tipo de Entrega: *${pedidoGuardado.formaEntrega}*  
+🆔 Código: *${pedidoGuardado.codigo}*  
+📅 Fecha: *${new Date(pedidoGuardado.fechaPedido).toLocaleString()}*
+ Sistema: *https://blessburger.items.bo*
+
+
+✅ Revisa los detalles en tu panel.`;
+
+    // Emitir evento asíncrono SIN bloquear la respuesta
+    this.eventEmitter.emitAsync('pedido.creada', {
+      numero: process.env.WSP_NUM,
+      mensaje,
+    });
+
 
     return pedidoG
   }
@@ -219,13 +244,13 @@ export class PedidosService {
       glosa: pedido.glosa,
       detalles
     }
-    if (metodoPago === 'QR') {
-      if (pedido.metodoPago === 'EFECTIVO') {
-        venta.idQR = idQr;
-      } else {
-        venta.idQR = pedido.qr.id
-      }
-    }
+    // if (metodoPago === 'QR') {
+    //   if (pedido.metodoPago === 'EFECTIVO') {
+    //     venta.idQR = idQr;
+    //   } else {
+    //     venta.idQR = pedido.qr.id
+    //   }
+    // }
 
     //3: Crear la venta
     const ventaG = await this.ventasService.create(venta);

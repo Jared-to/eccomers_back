@@ -16,6 +16,7 @@ import { ClientesModule } from 'src/clientes/clientes.module';
 import { PedidosModule } from 'src/pedidos/pedidos.module';
 import { ConfirmacionPagoQR } from './entities/confirmaciones-pago-qr.entity';
 import { QrGenerados } from './entities/qr-generados.entity';
+import { VentaListener } from './listeners/venta.listner';
 
 @Module({
   imports: [
@@ -31,7 +32,7 @@ import { QrGenerados } from './entities/qr-generados.entity';
 
   ],
   controllers: [VentasController],
-  providers: [VentasService],
+  providers: [VentasService, VentaListener],
   exports: [TypeOrmModule, VentasService]
 })
 export class VentasModule { }
