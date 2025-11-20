@@ -1,10 +1,11 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { AuthService } from 'src/auth/auth.service';
-import { createAlmacen, createUserSeed, createCliente, createCategoria } from './data/data'
+import { createAlmacen, createUserSeed, createCliente, createCategoria, createControl } from './data/data'
 import { AlmacenesService } from 'src/almacenes/almacenes.service';
 import { ClientesService } from 'src/clientes/clientes.service';
 import { CategoriasService } from 'src/categorias/categorias.service';
 import { ConfigService } from 'src/config/config.service';
+import { ControlService } from 'src/control/control.service';
 
 @Injectable()
 export class SeedService {
@@ -14,7 +15,7 @@ export class SeedService {
     private readonly clientesService: ClientesService,
     private readonly categoriaService: CategoriasService,
     private readonly configService: ConfigService,
-
+    private readonly controlService: ControlService,
   ) { }
   async create(): Promise<object> {
 
@@ -25,6 +26,7 @@ export class SeedService {
     const seed = await this.authServie.create(createUserSeed)
     const categoria = await this.categoriaService.createCategoria(createCategoria);
     const config = await this.configService.configInicial()
+    await this.controlService.create(createControl)
     if (!seed || !almacen || !cliente || !categoria || !config) {
       throw new InternalServerErrorException('Error al hacer el seed.')
     }

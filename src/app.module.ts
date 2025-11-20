@@ -24,6 +24,7 @@ import { ConfigModuleConfig } from './config/config.module';
 import { DescuentosModule } from './descuentos/descuentos.module';
 import { NotificacionesModule } from './notificaciones/notificaciones.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ControlModule } from './control/control.module';
 
 @Module({
   imports: [
@@ -65,6 +66,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
     ConfigModuleConfig,
     DescuentosModule,
     NotificacionesModule,
+    ControlModule,
     EventEmitterModule.forRoot(),
   ],
 })

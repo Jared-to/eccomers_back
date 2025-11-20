@@ -8,6 +8,7 @@ import { JwtPayload } from './interface/jwt-payload.interface';
 import { JwtService } from '@nestjs/jwt';
 import { User } from './entities/user.entity';
 import axios from 'axios';
+import { ControlService } from 'src/control/control.service';
 
 @Injectable()
 export class AuthService {
@@ -15,7 +16,7 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-
+    private readonly controlService: ControlService,
     private readonly jwtService: JwtService,
   ) { }
 
@@ -179,6 +180,13 @@ export class AuthService {
     //   console.log(error);
 
     // }
+
+    const control = await this.controlService.findOne();
+
+    if (!control.estado) {
+      throw new BadRequestException('El sistema esta inactivo');
+    }
+
     return {
       ...user,
       token: this.getJwtToken({ id: user.id })

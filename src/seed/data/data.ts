@@ -2,6 +2,7 @@ import { CreateAlmacenDto } from "src/almacenes/dto/create-almacen.dto";
 import { CreateUserDto } from "src/auth/dto";
 import { CreateCategoriaDto } from "src/categorias/dto/create-categoria.dto";
 import { CreateClienteDto } from "src/clientes/dto/create-cliente.dto";
+import { CreateControlDto } from "src/control/dto/create-control.dto";
 
 
 export const createUserSeed: CreateUserDto = {
@@ -29,3 +30,9 @@ export const createCategoria: CreateCategoriaDto = {
   descripcion: 'Categoria Incial',
   nombre: 'General',
 };
+
+export const createControl: CreateControlDto = {
+  titleMensaje: 'Sistema Paralizado',
+  descripcionMensaje: 'Sistema paralizado contacte con el Administrador para mas info.',
+};
+

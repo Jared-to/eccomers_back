@@ -6,10 +6,11 @@ import { AlmacenesModule } from 'src/almacenes/almacenes.module';
 import { ClientesModule } from 'src/clientes/clientes.module';
 import { CategoriasModule } from 'src/categorias/categorias.module';
 import { ConfigModuleConfig } from 'src/config/config.module';
+import { ControlModule } from 'src/control/control.module';
 
 @Module({
   controllers: [SeedController],
   providers: [SeedService],
-  imports:[AuthModule,AlmacenesModule,ClientesModule,CategoriasModule,ConfigModuleConfig]
+  imports: [AuthModule, AlmacenesModule, ClientesModule, CategoriasModule, ConfigModuleConfig, ControlModule]
 })
-export class SeedModule {}
+export class SeedModule { }
